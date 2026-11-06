@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="en">
+<title>Capsol</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Capsol: hold the coin, win the whole capsule. Every trade charges a capsule; when the window ends, one holder gets all of it in SOL.">
+<meta name="theme-color" content="#05030C">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Silkscreen:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='9' width='26' height='14' rx='7' fill='%239945FF'/%3E%3Cpath d='M16 9h6a7 7 0 0 1 0 14h-6z' fill='%2314F195'/%3E%3C/svg%3E">
+<style>
+/* Layout: an early-2000s desktop — every section is a beveled "program window" on a black CRT desk; capsulepad's page order kept top to bottom, views routed by hash */
+:root{
+  --bg:#05030C; --desk:#0A0618; --panel:#0E0A22; --panel2:#160F33; --line:#2A1F5C;
+  --purple:#9945FF; --magenta:#DC1FFF; --green:#14F195; --blue:#00C2FF; --amber:#FFD166; --red:#FF4D7D;
+  --text:#ECE8FF; --dim:#9A92C9; --faint:#5E5690;
+  --glow:var(--green); --title-a:#9945FF; --title-b:#00C2FF;
+  --display:"VT323","Lucida Console","Courier New",monospace;
+  --pixel:"Silkscreen","Lucida Console","Courier New",monospace;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+:root[data-phosphor="blue"]{--glow:var(--blue);--title-a:#0057FF;--title-b:#00C2FF}
+:root[data-phosphor="green"]{--glow:#39FF14;--title-a:#0B6B2E;--title-b:#14F195}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:15px;line-height:1.55;overflow-x:hidden;
+  background-image:radial-gradient(ellipse at 20% -10%,rgba(153,69,255,.28),transparent 55%),radial-gradient(ellipse at 100% 30%,rgba(0,194,255,.16),transparent 50%),radial-gradient(ellipse at 10% 90%,rgba(20,241,149,.12),transparent 50%),
+  linear-gradient(rgba(153,69,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(153,69,255,.06) 1px,transparent 1px);
+  background-size:auto,auto,auto,40px 40px,40px 40px;background-attachment:fixed}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:70;background:var(--bg)}
+/* CRT overlay */
+.crt{position:fixed;inset:0;pointer-events:none;z-index:200;background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+.crt::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.55));animation:flick 6s infinite steps(1)}
+@keyframes flick{0%,100%{opacity:1}47%{opacity:.92}48%{opacity:1}}
+body.no-crt .crt{display:none}
+a{color:var(--blue)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px dashed var(--green);outline-offset:3px}
+::selection{background:var(--purple);color:#fff}
+.wrap{max-width:1220px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;line-height:.95;text-wrap:balance;letter-spacing:.01em}
+.px{font-family:var(--pixel);text-transform:uppercase;letter-spacing:.08em}
+.tag{font-family:var(--pixel);font-size:10px;letter-spacing:.1em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid currentColor;background:rgba(0,0,0,.35)}
+.tag.g{color:var(--green)}.tag.p{color:var(--purple)}.tag.b{color:var(--blue)}.tag.a{color:var(--amber)}.tag.m{color:var(--magenta)}
+.dot{width:7px;height:7px;background:currentColor;box-shadow:0 0 8px currentColor;animation:blink 1.2s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+.glow{color:var(--glow);text-shadow:0 0 6px var(--glow),0 0 22px color-mix(in srgb,var(--glow) 55%,transparent)}
+.grad{background:linear-gradient(90deg,var(--purple),var(--magenta) 35%,var(--blue) 70%,var(--green));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 14px rgba(153,69,255,.5))}
+.dim{color:var(--dim)}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- program window ---------- */
+.win{background:var(--panel);border:2px solid;border-color:#5A4AA8 #1A1240 #1A1240 #5A4AA8;box-shadow:0 0 0 1px #000,6px 6px 0 rgba(0,0,0,.6),0 0 40px rgba(153,69,255,.12);min-width:0;position:relative}
+.win>.bar{display:flex;align-items:center;gap:8px;padding:5px 6px 5px 10px;background:linear-gradient(90deg,var(--title-a),var(--title-b));color:#fff;font-family:var(--pixel);font-size:11px;letter-spacing:.06em;text-transform:uppercase;user-select:none}
+.win>.bar .ttl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:1px 1px 0 rgba(0,0,0,.4)}
+.win>.bar .ctl{display:flex;gap:4px}
+.win>.bar .ctl i{width:16px;height:14px;background:#C9C3E8;border:1px solid;border-color:#fff #4b4570 #4b4570 #fff;display:grid;place-items:center;font-style:normal;font-size:9px;color:#1a1240;line-height:1}
+.win>.body{padding:20px}
+.win.term>.body{background:#030208;font-family:var(--mono)}
+.inset{background:#07051A;border:2px solid;border-color:#120C30 #3B2F7A #3B2F7A #120C30;padding:14px;min-width:0}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;font-family:var(--pixel);font-size:12px;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;color:#05030C;background:var(--green);
+  border:2px solid;border-color:#B6FFE0 #067a4a #067a4a #B6FFE0;box-shadow:3px 3px 0 #000;transition:transform .06s}
+.btn:hover{filter:brightness(1.1) saturate(1.2);box-shadow:3px 3px 0 #000,0 0 18px rgba(20,241,149,.5)}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000;border-color:#067a4a #B6FFE0 #B6FFE0 #067a4a}
+.btn.p{background:var(--purple);color:#fff;border-color:#D4B6FF #4B1A99 #4B1A99 #D4B6FF}
+.btn.p:hover{box-shadow:3px 3px 0 #000,0 0 18px rgba(153,69,255,.6)}
+.btn.b{background:var(--blue);border-color:#B8EEFF #006A8C #006A8C #B8EEFF}
+.btn.ghost{background:var(--panel2);color:var(--text);border-color:#5A4AA8 #120C30 #120C30 #5A4AA8}
+.btn.sm{padding:7px 11px;font-size:10px}
+.btn[disabled]{filter:grayscale(.8) brightness(.7);cursor:not-allowed;transform:none}
+.link{background:none;border:0;padding:0;color:var(--blue);text-decoration:underline;text-underline-offset:3px;font-family:var(--mono)}
+
+/* ---------- header ---------- */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:60;background:rgba(5,3,12,.92);backdrop-filter:blur(6px);border-bottom:2px solid var(--line)}
+.hd{display:flex;align-items:center;gap:14px;padding-block:10px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.logo svg{width:46px;height:30px;filter:drop-shadow(0 0 8px rgba(153,69,255,.7))}
+.logo b{font-family:var(--display);font-size:34px;font-weight:400;letter-spacing:.04em;line-height:1}
+.nav{display:flex;gap:2px;margin-left:10px}
+.nav a{font-family:var(--pixel);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);text-decoration:none;padding:8px 10px;border:1px solid transparent}
+.nav a:hover{color:var(--text);border-color:var(--line)}
+.nav a.on{color:#05030C;background:var(--green);box-shadow:0 0 14px rgba(20,241,149,.5)}
+.hd-r{margin-left:auto;display:flex;align-items:center;gap:8px}
+.ico{width:38px;height:38px;display:grid;place-items:center;background:var(--panel2);border:2px solid;border-color:#5A4AA8 #120C30 #120C30 #5A4AA8;color:var(--text)}
+.ico svg{width:16px;height:16px;fill:currentColor}
+.ico:hover{color:var(--green)}
+.menu-wrap{position:relative}
+.menu{position:absolute;right:0;top:calc(100% + 8px);width:240px;z-index:80}
+.menu .body{padding:6px}
+.menu button,.menu a{display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;background:none;border:0;text-align:left;color:var(--text);text-decoration:none;font-size:13px}
+.menu button:hover,.menu a:hover{background:var(--purple);color:#fff}
+.menu hr{border:0;border-top:1px dashed var(--line);margin:4px 0}
+@media (max-width:1020px){.nav{display:none}}
+@media (max-width:560px){.logo b{font-size:28px}.hd-r .ico.soc{display:none}}
+
+.status{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-block:8px;font-size:12px}
+.strip{border-block:1px solid var(--line);background:#07041A;overflow:hidden;white-space:nowrap}
+.strip-track{display:inline-flex;gap:38px;padding:7px 0;animation:mq 46s linear infinite}
+.strip-track span{font-family:var(--pixel);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.strip-track span:nth-child(4n+1){color:var(--green)}.strip-track span:nth-child(4n+2){color:var(--purple)}.strip-track span:nth-child(4n+3){color:var(--blue)}.strip-track span:nth-child(4n){color:var(--magenta)}
+@keyframes mq{to{transform:translateX(-50%)}}
+
+/* ---------- layout bits ---------- */
+main{padding-block:26px 120px}
+.view{display:grid;gap:34px}
+.sec{display:grid;gap:18px}
+.sec-h{display:flex;justify-content:space-between;align-items:end;gap:14px;flex-wrap:wrap}
+.sec-h h2{font-size:clamp(40px,5.4vw,62px)}
+.eyebrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.lead{max-width:62ch;color:var(--dim);margin:0}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media (max-width:900px){.g2,.g3{grid-template-columns:1fr}.g4{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:460px){.g4{grid-template-columns:1fr}}
+.kv{display:grid;gap:4px}
+.kv span{font-family:var(--pixel);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.kv b{font-family:var(--display);font-size:34px;font-weight:400;line-height:1;font-variant-numeric:tabular-nums}
+.note{font-size:12.5px;color:var(--faint)}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1.1fr 1fr;gap:26px;align-items:stretch}
+@media (max-width:980px){.hero{grid-template-columns:1fr}}
+@media (max-width:460px){.pill{width:110px;height:50px}.charge{gap:12px}#heroCd{font-size:38px!important}}
+.hero h1{font-size:clamp(58px,8.4vw,112px);margin:14px 0 16px}
+.hero h1 .l{display:block}
+.glitch{position:relative;display:inline-block}
+.glitch::before,.glitch::after{content:attr(data-t);position:absolute;inset:0;pointer-events:none}
+.glitch::before{color:var(--magenta);transform:translate(-3px,0);clip-path:inset(0 0 60% 0);animation:gl 3.2s infinite steps(1);opacity:.8}
+.glitch::after{color:var(--blue);transform:translate(3px,0);clip-path:inset(55% 0 0 0);animation:gl 2.7s infinite steps(1) reverse;opacity:.8}
+@keyframes gl{0%,86%,100%{transform:translate(0)}88%{transform:translate(-5px,2px)}91%{transform:translate(4px,-2px)}94%{transform:translate(-2px,1px)}}
+.hero p.lede{font-size:17px;max-width:52ch;color:#CFC8F5;margin:0 0 20px}
+.cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.hero-left{min-width:0;display:flex;flex-direction:column;justify-content:center}
+.charge{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center;margin-top:24px}
+.pill{width:150px;height:64px;position:relative;border:3px solid #CFC8F5;border-radius:34px;overflow:hidden;background:#07051A;box-shadow:0 0 22px rgba(153,69,255,.55),inset 0 0 12px rgba(0,0,0,.8)}
+.pill .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,var(--purple),var(--magenta) 50%,var(--blue) 80%,var(--green));transition:width 1s linear}
+.pill .fill::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 8px,rgba(0,0,0,.25) 8px 10px);animation:bub 1.4s linear infinite}
+@keyframes bub{to{background-position:20px 0}}
+.pill::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:3px;background:#CFC8F5;z-index:2;opacity:.8}
+.pill::after{content:"";position:absolute;left:14px;top:8px;width:46px;height:8px;border-radius:8px;background:rgba(255,255,255,.45);z-index:3}
+
+/* terminal */
+.tbody{height:100%;display:flex;flex-direction:column}
+.tlog{flex:1;min-height:300px;max-height:420px;overflow:auto;font-size:13.5px;line-height:1.6;color:#BFF8DF;white-space:pre-wrap;word-break:break-word}
+.tlog .c-g{color:var(--green)}.tlog .c-p{color:#C59BFF}.tlog .c-b{color:var(--blue)}.tlog .c-a{color:var(--amber)}.tlog .c-d{color:var(--faint)}.tlog .c-m{color:var(--magenta)}
+.tin{display:flex;gap:8px;align-items:center;border-top:1px dashed #1f3b30;padding-top:10px;margin-top:10px}
+.tin label{color:var(--green);font-weight:700;white-space:nowrap}
+.tin input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:var(--green);caret-color:var(--green);font-family:var(--mono);font-size:14px}
+.cursor::after{content:"█";animation:blink 1s steps(2) infinite;color:var(--green)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chips button{background:#0b1a14;border:1px solid #1f5c43;color:var(--green);font-size:11.5px;padding:3px 8px}
+.chips button:hover{background:var(--green);color:#000}
+
+/* banner */
+.banner{background:linear-gradient(120deg,rgba(153,69,255,.25),rgba(0,194,255,.12) 60%,rgba(20,241,149,.18));}
+.banner .body{display:grid;grid-template-columns:1.2fr 1fr;gap:24px;align-items:center}
+@media (max-width:860px){.banner .body{grid-template-columns:1fr}}
+.banner h2{font-size:clamp(46px,6vw,74px)}
+.facts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.facts .inset b{display:block;font-family:var(--display);font-size:30px;font-weight:400;line-height:1}
+.facts .inset span{font-size:12px;color:var(--dim)}
+
+/* steps */
+.step{display:grid;gap:10px;align-content:start}
+.step .n{font-family:var(--display);font-size:64px;line-height:.8}
+.step h3{font-size:32px}
+.step p{margin:0;color:var(--dim)}
+.good{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13.5px;color:#CFC8F5}
+.good span::before{content:"[✓] ";color:var(--green)}
+
+/* states */
+.states{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:2px solid var(--line)}
+@media (max-width:860px){.states{grid-template-columns:1fr 1fr}}
+@media (max-width:460px){.states{grid-template-columns:1fr}}
+.state{padding:18px;border-right:2px dashed var(--line);position:relative;min-width:0}
+.state:last-child{border-right:0}
+.state .s{font-family:var(--display);font-size:42px;line-height:1}
+.state p{margin:6px 0 0;font-size:13.5px;color:var(--dim)}
+.state .ix{font-family:var(--pixel);font-size:10px;color:var(--faint)}
+.vs{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center}
+@media (max-width:700px){.vs{grid-template-columns:1fr}}
+.vs .big{font-family:var(--display);font-size:48px;line-height:1}
+.crumbs{display:flex;flex-wrap:wrap;gap:3px;margin-top:10px}
+.crumbs i{width:6px;height:6px;background:var(--faint)}
+
+/* fee flow */
+.flow{display:grid;grid-template-columns:auto 1fr;gap:0 20px;align-items:center}
+@media (max-width:760px){.flow{grid-template-columns:1fr;gap:16px}}
+.trade{padding:22px;border:2px solid var(--blue);text-align:center;box-shadow:0 0 20px rgba(0,194,255,.35);background:#02121c}
+.trade b{font-family:var(--display);font-size:40px;font-weight:400;display:block;line-height:1}
+.splits{display:grid;gap:10px}
+.split{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;padding:10px 14px;border:1px solid var(--line);background:var(--panel2)}
+.split .arr{font-family:var(--display);font-size:30px;color:var(--faint)}
+.split b{font-family:var(--display);font-size:30px;font-weight:400;white-space:nowrap}
+.split small{display:block;color:var(--dim);font-size:12.5px}
+.bar-meter{height:8px;background:#1a1240;margin-top:6px;position:relative}
+.bar-meter i{position:absolute;left:0;top:0;bottom:0}
+
+/* calc */
+.calc{display:grid;grid-template-columns:1fr 1.15fr;gap:20px}
+@media (max-width:860px){.calc{grid-template-columns:1fr}}
+.field{display:grid;gap:6px}
+.field>label,.flabel{font-family:var(--pixel);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.inp,.field input[type=text],.field input[type=number],.field input[type=url],.field select,.field textarea{width:100%;background:#03020A;border:2px solid;border-color:#120C30 #3B2F7A #3B2F7A #120C30;color:var(--green);padding:10px 12px;font-family:var(--mono);font-size:15px;border-radius:0}
+.field textarea{resize:vertical;min-height:96px;color:#CFC8F5}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 2px rgba(20,241,149,.25)}
+input[type=range]{width:100%;accent-color:var(--purple)}
+.out-row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.cmp{display:grid;gap:10px}
+.cmp .row{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;font-size:13px}
+.cmp .track{height:16px;background:#1a1240;border:1px solid var(--line);position:relative;overflow:hidden}
+.cmp .track i{position:absolute;left:0;top:0;bottom:0;transition:width .4s}
+
+/* sealed */
+.seal{display:grid;gap:8px;align-content:start}
+.seal .no{font-family:var(--display);font-size:28px;color:var(--red);line-height:1}
+.seal h3{font-size:28px}
+.seal p{margin:0;color:var(--dim);font-size:13.5px}
+
+/* notes */
+.notes{display:grid;gap:10px;max-height:340px;overflow:auto}
+.notecard{display:grid;gap:6px;padding:12px;border:1px dashed var(--purple);background:rgba(153,69,255,.07)}
+.notecard .top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px}
+.notecard .msg{color:#CFC8F5;white-space:pre-wrap;word-break:break-word}
+.notecard .msg.locked{color:var(--faint);letter-spacing:.1em}
+.hash{font-size:11.5px;color:var(--faint);word-break:break-all}
+
+/* empty */
+.empty{display:grid;place-items:center;text-align:center;gap:10px;padding:34px 18px;border:2px dashed var(--line);background:repeating-linear-gradient(45deg,transparent 0 12px,rgba(153,69,255,.04) 12px 24px)}
+.empty .art{font-family:var(--mono);color:var(--purple);white-space:pre;font-size:12px;line-height:1.2;text-shadow:0 0 10px rgba(153,69,255,.6)}
+.empty b{font-family:var(--display);font-size:32px;font-weight:400}
+.empty p{margin:0;color:var(--dim);max-width:46ch}
+
+/* faq */
+.faq{display:grid;gap:8px}
+.faq details{border:1px solid var(--line);background:var(--panel2)}
+.faq summary{cursor:pointer;list-style:none;display:flex;gap:12px;padding:13px 16px;font-weight:600}
+.faq summary::before{content:">";color:var(--green);font-weight:700}
+.faq details[open] summary::before{content:"v"}
+.faq details p{margin:0;padding:0 16px 16px 36px;color:var(--dim);max-width:72ch}
+
+/* explore */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.toolbar .search{flex:1;min-width:200px;display:flex;align-items:center;gap:8px}
+.seg{display:inline-flex;border:2px solid var(--line)}
+.seg button{background:transparent;border:0;padding:8px 12px;font-family:var(--pixel);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim)}
+.seg button[aria-pressed="true"]{background:var(--purple);color:#fff}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.ccard{display:block}
+.ccard .body{display:grid;gap:12px;padding:16px}
+.ccard .head{display:flex;gap:12px;align-items:center}
+.cimg{width:52px;height:52px;flex:none;border:2px solid var(--green);background:#07051A;display:grid;place-items:center;overflow:hidden;box-shadow:0 0 12px rgba(20,241,149,.35)}
+.cimg img{width:100%;height:100%;object-fit:cover}
+.cimg svg{width:40px;height:26px}
+.ccard h3{font-size:30px}
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px}
+.mini div{background:#07051A;border:1px solid var(--line);padding:7px}
+.mini span{display:block;font-family:var(--pixel);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+.mini b{font-family:var(--display);font-size:22px;font-weight:400;font-variant-numeric:tabular-nums}
+.curve{height:10px;border:1px solid var(--line);background:#07051A;position:relative}
+.curve i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--purple),var(--green))}
+.tblwrap{overflow-x:auto;border:2px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums;min-width:640px}
+th{font-family:var(--pixel);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);text-align:left;padding:10px 12px;background:#07051A;border-bottom:2px solid var(--line);white-space:nowrap}
+td{padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+tr:hover td{background:rgba(153,69,255,.07)}
+td.empty-row{text-align:center;color:var(--dim);white-space:normal;padding:26px}
+
+/* coin page */
+.coin-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:22px}
+@media (max-width:960px){.coin-grid{grid-template-columns:1fr}}
+.nosignal{position:relative;height:320px;overflow:hidden;background:#000;border:2px solid var(--line)}
+.nosignal canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.5}
+.nosignal .msg{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:6px}
+.nosignal .msg b{font-family:var(--display);font-size:54px;font-weight:400;color:#fff;text-shadow:0 0 14px var(--purple)}
+.tabsline{display:flex;gap:4px;flex-wrap:wrap}
+.tabsline button{background:#07051A;border:1px solid var(--line);padding:5px 10px;font-size:12px;color:var(--faint)}
+.bs{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--line)}
+.bs button{border:0;padding:10px;background:transparent;font-family:var(--pixel);font-size:12px;text-transform:uppercase;color:var(--dim)}
+.bs button[aria-pressed="true"].buy{background:var(--green);color:#000}
+.bs button[aria-pressed="true"].sell{background:var(--red);color:#000}
+.quick{display:flex;gap:6px;flex-wrap:wrap}
+.quick button{flex:1;background:var(--panel2);border:1px solid var(--line);padding:7px;font-size:12.5px}
+.quick button:hover{border-color:var(--green);color:var(--green)}
+
+/* openings */
+.clock-grid{display:grid;grid-template-columns:420px 1fr;gap:22px;align-items:start}
+@media (max-width:960px){.clock-grid{grid-template-columns:1fr}}
+.dial{width:100%;max-width:420px;aspect-ratio:1;margin:0 auto;display:block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--dim);justify-content:center}
+.legend i{display:inline-block;width:10px;height:10px;margin-right:6px;vertical-align:-1px}
+.status-pill{font-family:var(--pixel);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border:1px solid currentColor}
+
+/* launch */
+.wizard{display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start}
+@media (max-width:960px){.wizard{grid-template-columns:1fr}}
+.wstep{display:grid;gap:14px}
+.wstep h3{font-size:30px;display:flex;gap:12px;align-items:center}
+.wstep h3 .n{width:36px;height:36px;display:grid;place-items:center;background:var(--purple);color:#fff;font-size:26px;flex:none}
+.upload{display:flex;gap:14px;align-items:center}
+.upload .cimg{width:80px;height:80px;cursor:pointer}
+.opts{display:flex;gap:8px;flex-wrap:wrap}
+.opts button{background:#07051A;border:2px solid var(--line);padding:9px 14px;font-family:var(--pixel);font-size:11px;text-transform:uppercase;color:var(--dim)}
+.opts button[aria-pressed="true"]{border-color:var(--green);color:var(--green);box-shadow:0 0 12px rgba(20,241,149,.35)}
+.sticky{position:sticky;top:96px;display:grid;gap:16px}
+.err{color:var(--red);font-size:13px}
+
+/* winners */
+.proof-out{display:grid;gap:8px;font-size:13px}
+.proof-out div{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:baseline}
+.proof-out span{font-family:var(--pixel);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.proof-out code{word-break:break-all;color:var(--green)}
+
+/* docs */
+.docs{display:grid;grid-template-columns:230px 1fr;gap:22px;align-items:start}
+@media (max-width:900px){.docs{grid-template-columns:1fr}.docs nav{position:static!important}}
+.docs nav{position:sticky;top:96px;display:grid;gap:2px}
+.docs nav a{text-decoration:none;color:var(--dim);padding:7px 10px;border-left:2px solid var(--line);font-size:13.5px}
+.docs nav a:hover{color:var(--green);border-color:var(--green)}
+.docs article{display:grid;gap:26px;min-width:0}
+.docs article h3{font-size:36px;margin-bottom:8px}
+.docs article p,.docs article li{color:#CFC8F5;max-width:72ch}
+.docs article ul{padding-left:20px;margin:6px 0}
+.tl{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);font-size:12px;text-align:center;margin-top:10px}
+.tl div{padding:10px 6px;border-right:1px solid var(--line)}
+.tl div:last-child{border-right:0}
+.tl b{display:block;font-family:var(--display);font-size:24px;font-weight:400;color:var(--green)}
+@media (max-width:560px){.tl{grid-template-columns:1fr 1fr}}
+
+/* profile */
+.ptabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:2px solid var(--line)}
+.ptabs button{background:transparent;border:0;border-bottom:3px solid transparent;padding:10px 12px;font-family:var(--pixel);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin-bottom:-2px}
+.ptabs button[aria-selected="true"]{color:var(--green);border-color:var(--green)}
+.blurred [data-bal]{filter:blur(8px);user-select:none}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px dashed var(--line)}
+.sw{width:46px;height:24px;background:#07051A;border:2px solid var(--line);position:relative;padding:0;flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;background:var(--faint);transition:left .15s}
+.sw[aria-checked="true"]{border-color:var(--green)}
+.sw[aria-checked="true"]::after{left:24px;background:var(--green);box-shadow:0 0 8px var(--green)}
+
+/* footer */
+footer{border-top:2px solid var(--line);background:#04020C;padding-block:36px 110px}
+.ft{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:24px}
+@media (max-width:820px){.ft{grid-template-columns:1fr 1fr}}
+.ft h4{font-family:var(--pixel);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:0 0 10px;font-weight:400}
+.ft a{display:block;color:var(--text);text-decoration:none;padding:3px 0;font-size:14px}
+.ft a:hover{color:var(--green)}
+
+/* mobile nav */
+.mnav{position:fixed;left:0;right:0;bottom:0;z-index:65;display:none;grid-template-columns:repeat(5,1fr);background:#07041A;border-top:2px solid var(--purple);padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+.mnav a{display:grid;justify-items:center;gap:2px;text-decoration:none;color:var(--dim);font-family:var(--pixel);font-size:9px;text-transform:uppercase;padding:4px}
+.mnav a span{font-family:var(--display);font-size:22px;line-height:1}
+.mnav a.on{color:var(--green);text-shadow:0 0 8px var(--green)}
+@media (max-width:1020px){.mnav{display:grid}}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:120;background:#000;border:2px solid var(--green);color:var(--green);padding:10px 16px;font-size:13.5px;box-shadow:0 0 22px rgba(20,241,149,.4);max-width:calc(100% - 32px);text-align:center}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+</style>
+
+<div class="crt" aria-hidden="true"></div>
+
+<!-- ===================== HEADER ===================== -->
+<header>
+  <div class="wrap hd">
+    <a class="logo" href="#home" aria-label="Capsol home">
+      <svg viewBox="0 0 46 30" aria-hidden="true"><rect x="2" y="2" width="42" height="26" rx="13" fill="#9945FF" stroke="#ECE8FF" stroke-width="2"/><path d="M23 2h8a13 13 0 0 1 0 26h-8z" fill="#14F195"/><rect x="2" y="2" width="42" height="26" rx="13" fill="none" stroke="#ECE8FF" stroke-width="2"/><rect x="8" y="7" width="12" height="4" rx="2" fill="#fff" opacity=".55"/></svg>
+      <b class="grad">CAPSOL</b>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="#home" data-nav="home">Home</a>
+      <a href="#explore" data-nav="explore">Explore</a>
+      <a href="#openings" data-nav="openings">Openings</a>
+      <a href="#launch" data-nav="launch">Launch</a>
+      <a href="#winners" data-nav="winners">Winners</a>
+      <a href="#capsol" data-nav="capsol">$CAPSOL</a>
+      <a href="#docs" data-nav="docs">Docs</a>
+    </nav>
+    <div class="hd-r">
+      <a class="ico soc" id="xA" href="https://x.com/" target="_blank" rel="noopener" aria-label="Capsol on X"><svg viewBox="0 0 24 24"><path d="M18.9 2H22l-7.6 8.7L23 22h-6.7l-5.2-6.9L5 22H2l8.2-9.3L1.5 2h6.9l4.7 6.3L18.9 2zm-1.2 18h1.7L7.4 3.9H5.6L17.7 20z"/></svg></a>
+      <a class="ico soc" id="tgA" href="https://t.me/" target="_blank" rel="noopener" aria-label="Capsol on Telegram"><svg viewBox="0 0 24 24"><path d="M21.9 4.3 18.7 19.4c-.2 1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.3-5 9.1-8.2c.4-.4-.1-.6-.6-.2L6.2 13l-4.8-1.5c-1-.3-1-1 .2-1.5L20.5 3c.9-.3 1.6.2 1.4 1.3z"/></svg></a>
+      <button class="ico" id="sndBtn" type="button" aria-label="Toggle sound" title="Sound"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path id="sndWave" d="M16 8a5 5 0 0 1 0 8" fill="none" stroke="currentColor" stroke-width="2" opacity=".3"/></svg></button>
+      <div class="menu-wrap">
+        <button class="btn sm" id="walletBtn" type="button" aria-haspopup="menu" aria-expanded="false">Connect wallet</button>
+        <div class="win menu" id="menu" hidden role="menu">
+          <div class="bar"><span class="ttl" id="menuAddr">wallet.exe</span></div>
+          <div class="body">
+            <a href="#profile" data-ptab="holdings" role="menuitem">Your profile <span class="dim">›</span></a>
+            <a href="#profile" data-ptab="prefs" role="menuitem">Manage account <span class="dim">›</span></a>
+            <a href="#profile" data-ptab="prefs" role="menuitem">Preferences <span class="dim">›</span></a>
+            <a href="#profile" data-ptab="transfers" role="menuitem">Transfers <span class="dim">›</span></a>
+            <button type="button" id="menuBlur" role="menuitem">Blur balances <span class="dim" id="menuBlurState">off</span></button>
+            <a href="#profile" data-ptab="rewards" role="menuitem">Rewards <span class="dim">›</span></a>
+            <a id="supportA" href="https://x.com/" target="_blank" rel="noopener" role="menuitem">Contact support <span class="dim">↗</span></a>
+            <hr>
+            <button type="button" id="logoutBtn" role="menuitem" style="color:var(--red)">Log out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="strip" aria-hidden="true"><div class="strip-track" id="strip"></div></div>
+</header>
+
+<main class="wrap">
+
+<!-- ===================== HOME ===================== -->
+<section class="view" data-view="home">
+  <div class="status"><span class="tag g"><i class="dot"></i>Mainnet</span><span class="tag p">Genesis launch stage</span><span class="dim num" id="utcNow">UTC --:--:--</span></div>
+
+  <div class="hero">
+    <div class="hero-left">
+      <div class="eyebrow"><span class="tag b">C:\CAPSOL&gt; run capsule.exe</span></div>
+      <h1><span class="l">HOLD THE COIN.</span><span class="l glitch grad" data-t="WIN THE WHOLE">WIN THE WHOLE</span><span class="l glow">CAPSULE.</span></h1>
+      <p class="lede">Every coin on Capsol has a capsule that fills with its trading fees. When the timer ends, one random holder gets all of it in SOL. Holding is your entry. There's nothing to claim and nothing to stake.</p>
+      <div class="cta">
+        <a class="btn" href="#explore">Explore capsules</a>
+        <a class="btn p" href="#launch">Launch a coin</a>
+        <a class="link" href="#docs">New here? Start here →</a>
+      </div>
+      <div class="charge">
+        <div class="pill" aria-hidden="true"><div class="fill" id="heroFill"></div></div>
+        <div>
+          <div class="px" style="font-size:10px;color:var(--dim)">$CAPSOL 4-hour window · next opening</div>
+          <div class="num" style="font-family:var(--display);font-size:46px;line-height:1" id="heroCd">--:--:--</div>
+          <div class="note" id="heroCdNote">Window progress shown live. Pot amounts appear once trading opens.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="win term">
+      <div class="bar"><span class="ttl">C:\CAPSOL\terminal.exe</span><span class="ctl"><i>_</i><i>□</i><i>×</i></span></div>
+      <div class="body tbody">
+        <div class="tlog" id="tlog" aria-live="polite"></div>
+        <form class="tin" id="tform" autocomplete="off">
+          <label for="tcmd">CAPSOL&gt;</label>
+          <input id="tcmd" spellcheck="false" placeholder="type help  ( / to focus )" aria-label="Terminal command">
+        </form>
+        <div class="chips" id="tchips"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- $CAPSOL launch banner -->
+  <div class="win banner" id="capsolBanner">
+    <div class="bar"><span class="ttl">$CAPSOL_official_opening.txt</span><span class="ctl"><i>_</i><i>□</i><i>×</i></span></div>
+    <div class="body">
+      <div>
+        <div class="eyebrow"><span class="tag a"><i class="dot"></i>Launch imminent</span><span class="tag g">LP permanent lock</span><span class="tag b">Meteora DBC</span></div>
+        <h2>$CAPSOL <span class="grad">Official Opening</span></h2>
+        <p class="lead" style="margin-top:12px">The first capsule on Capsol is the platform's own coin. Its pot draws every 4 hours, and 30% of platform revenue goes to five $CAPSOL holders every hour.</p>
+        <div class="cta" style="margin-top:16px"><a class="btn" href="#capsol">About $CAPSOL</a><a class="btn ghost" href="#coin">Open coin page</a></div>
+      </div>
+      <div class="facts">
+        <div class="inset"><b class="glow">1,000,000,000</b><span>Total supply</span></div>
+        <div class="inset"><b style="color:var(--purple)">0%</b><span>Team allocation</span></div>
+        <div class="inset"><b style="color:var(--blue)">1%</b><span>Of every $CAPSOL trade to its pot</span></div>
+        <div class="inset"><b style="color:var(--magenta)">30%</b><span>Platform revenue share</span></div>
+        <div class="inset"><b>$0.00</b><span>Paid so far · Genesis stage</span></div>
+        <div class="inset"><b style="color:var(--amber)">Stage 01</b><span>Genesis launch soon</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- for holders -->
+  <div class="sec">
+    <div class="sec-h"><div><div class="eyebrow"><span class="tag g">For holders</span></div><h2>Three steps. <span class="grad">Zero claiming.</span></h2></div></div>
+    <div class="g3">
+      <div class="win step"><div class="bar"><span class="ttl">step_01.exe</span></div><div class="body step"><span class="n glow">01</span><h3>Buy at least $50 of any coin</h3><p>Every $50 you hold is one unit. Units turn into tickets, and anyone can see the tickets on the coin's page without connecting a wallet.</p></div></div>
+      <div class="win step"><div class="bar"><span class="ttl">step_02.exe</span></div><div class="body step"><span class="n" style="color:var(--purple)">02</span><h3>Hold until the timer ends</h3><p>Hold through at least a quarter of the window. Sell early and your tickets for that window are void. Nothing is taken from you.</p></div></div>
+      <div class="win step"><div class="bar"><span class="ttl">step_03.exe</span></div><div class="body step"><span class="n" style="color:var(--blue)">03</span><h3>Get paid automatically</h3><p>If your ticket is drawn, the whole pot lands in your wallet with a public proof. No claim, no deadline, no fee to receive it.</p></div></div>
+    </div>
+    <div class="good"><span>Your coins stay in your wallet</span><span>No lock-up</span><span>Losing a draw costs nothing extra</span><span>Streak bonus up to +50% tickets</span></div>
+  </div>
+
+  <!-- four states -->
+  <div class="sec">
+    <div class="sec-h"><div><div class="eyebrow"><span class="tag p">Inside every capsule</span></div><h2>Charge. Seal. Open. <span class="glow">Payout.</span></h2></div></div>
+    <div class="states">
+      <div class="state"><span class="ix">STATE_01</span><div class="s" style="color:var(--purple)">CHARGE</div><p>Every buy and sell sends 0.5–2% of its value into that coin's capsule.</p></div>
+      <div class="state"><span class="ix">STATE_02</span><div class="s" style="color:var(--blue)">SEAL</div><p>Five minutes before opening, tickets freeze and the list is hashed in public.</p></div>
+      <div class="state"><span class="ix">STATE_03</span><div class="s" style="color:var(--magenta)">OPEN</div><p>Chainlink VRF picks one ticket. Nobody chooses the seed.</p></div>
+      <div class="state"><span class="ix">STATE_04</span><div class="s glow">PAYOUT</div><p>The full charge goes to one wallet in SOL, with a proof anyone can replay.</p></div>
+    </div>
+    <div class="win"><div class="bar"><span class="ttl">airdrop_vs_capsule.bmp · illustration</span></div><div class="body vs">
+      <div><span class="px dim" style="font-size:10px">Typical airdrop</span><div class="big">$4,218 ÷ 46,800</div><p class="dim" style="margin:4px 0 0">$0.09 each. Less than the gas to sell it.</p><div class="crumbs" aria-hidden="true" id="crumbs"></div></div>
+      <div class="big dim" aria-hidden="true">VS</div>
+      <div><span class="px" style="font-size:10px;color:var(--green)">A capsule</span><div class="big glow">$4,218 → 1</div><p class="dim" style="margin:4px 0 0">The same amount, paid to one holder. Enough to matter.</p></div>
+    </div></div>
+  </div>
+
+  <!-- fee flow -->
+  <div class="sec">
+    <div class="sec-h"><div><div class="eyebrow"><span class="tag b">Where fees go</span></div><h2>Follow the <span class="grad">SOL.</span></h2></div><p class="lead">Creators choose their pot and creator split at launch, up to 2% combined. The 1% platform fee is fixed for every coin.</p></div>
+    <div class="win"><div class="bar"><span class="ttl">fee_router.sys</span></div><div class="body flow">
+      <div class="trade"><span class="px" style="font-size:10px;color:var(--blue)">Any trade</span><b>BUY / SELL</b><span class="dim" style="font-size:12px">on any Capsol coin</span></div>
+      <div class="splits">
+        <div class="split"><span class="arr">→</span><div><strong>That coin's capsule</strong><small>Paid to one holder at the end of the window</small><div class="bar-meter"><i style="width:66%;background:var(--green)"></i></div></div><b class="glow">0.5–2%</b></div>
+        <div class="split"><span class="arr">→</span><div><strong>The creator</strong><small>Claimable any time from your profile</small><div class="bar-meter"><i style="width:50%;background:var(--purple)"></i></div></div><b style="color:var(--purple)">0–1.5%</b></div>
+        <div class="split"><span class="arr">→</span><div><strong>Capsol platform</strong><small>Fixed. 30% of it streams to $CAPSOL holders every hour</small><div class="bar-meter"><i style="width:33%;background:var(--blue)"></i></div></div><b style="color:var(--blue)">1%</b></div>
+        <div class="split" style="border-color:var(--magenta)"><span class="arr" style="color:var(--magenta)">↳</span><div><strong>$CAPSOL revenue draw</strong><small>30% of the platform's 1%, split between 5 holders hourly</small><div class="bar-meter"><i style="width:30%;background:var(--magenta)"></i></div></div><b style="color:var(--magenta)">0.30%</b></div>
+      </div>
+    </div></div>
+    <p class="note">Net platform take is 0.70% of volume. $CAPSOL's own trades also send 1% into its own capsule, drawn every 4 hours.</p>
+  </div>
+
+  <!-- odds lab -->
+  <div class="sec" id="odds">
+    <div class="sec-h"><div><div class="eyebrow"><span class="tag m">Fair by math</span><span class="tag g">New · Odds Lab</span></div><h2>Square-root <span class="grad">tickets.</span></h2></div><p class="lead">$50 is one unit and tickets are the square root of units, so a holder with 1,000× your capital gets only about 31× your tickets.</p></div>
+    <div class="win"><div class="bar"><span class="ttl">odds_lab.exe</span><span class="ctl"><i>?</i></span></div><div class="body calc">
+      <div style="display:grid;gap:14px">
+        <div class="field"><label for="oUsd">Value you hold (USD)</label><input id="oUsd" type="number" min="0" step="50" value="500"></div>
+        <div class="field"><label for="oStreak">Full windows held in a row: <b id="oStreakV" style="color:var(--green)">2</b> (+<span id="oStreakP">20</span>%)</label><input id="oStreak" type="range" min="0" max="5" value="2"></div>
+        <div class="field"><label for="oHold">Share of this window you'll hold: <b id="oHoldV" style="color:var(--green)">100%</b></label><input id="oHold" type="range" min="0" max="100" value="100" step="5"></div>
+        <div class="field"><label for="oPool">Total tickets in the draw (your guess)</label><input id="oPool" type="number" min="1" value="2000"></div>
+        <p class="note" style="margin:0">Every number here is your own input. Nothing is pulled from a market.</p>
+      </div>
+      <div style="display:grid;gap:14px;align-content:start">
+        <div class="out-row">
+          <div class="inset kv"><span>Units</span><b id="oUnits">10</b></div>
+          <div class="inset kv"><span>Your tickets</span><b class="glow" id="oTix">3</b></div>
+          <div class="inset kv"><span>Chance to win</span><b style="color:var(--blue)" id="oChance">0.16%</b></div>
+          <div class="inset kv"><span>1 in</span><b style="color:var(--purple)" id="oOneIn">667</b></div>
+        </div>
+        <div class="inset cmp">
+          <span class="flabel">If tickets were linear vs square-root</span>
+          <div class="row"><span>Linear</span><div class="track"><i id="oLinBar" style="background:var(--red)"></i></div><b class="num" id="oLin">10</b></div>
+          <div class="row"><span>Capsol √</span><div class="track"><i id="oSqBar" style="background:var(--green)"></i></div><b class="num" id="oSq">3</b></div>
+          <div class="row"><span>1,000× whale</span><div class="track"><i id="oWhBar" style="background:var(--purple)"></i></div><b class="num" id="oWh">100</b></div>
+        </div>
+        <div class="note" id="oMsg"></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- sealed -->
+  <div class="sec">
+    <div class="sec-h"><div><div class="eyebrow"><span class="tag a">Sealed at launch</span></div><h2>Six things <span class="glow">nobody</span> can do.</h2></div><p class="lead">Once a coin launches, these rules are fixed in the program. Not by the creator, and not by Capsol.</p></div>
+    <div class="g3">
+      <div class="win"><div class="bar"><span class="ttl">rule_01.lock</span></div><div class="body seal"><span class="no">✕ 01</span><h3>Change the fee split</h3><p>The pot and creator percentages are set once, at launch.</p></div></div>
+      <div class="win"><div class="bar"><span class="ttl">rule_02.lock</span></div><div class="body seal"><span class="no">✕ 02</span><h3>Pick the winner</h3><p>The winning ticket comes from a Chainlink VRF seed that nobody can choose.</p></div></div>
+      <div class="win"><div class="bar"><span class="ttl">rule_03.lock</span></div><div class="body seal"><span class="no">✕ 03</span><h3>Edit the frozen list</h3><p>The ticket list is hashed and published before the draw. Any change breaks the hash.</p></div></div>
+      <div class="win"><div class="bar"><span class="ttl">rule_04.lock</span></div><div class="body seal"><span class="no">✕ 04</span><h3>Mint more supply</h3><p>Mint authority is revoked at launch. Supply is fixed for good.</p></div></div>
+      <div class="win"><div class="bar"><span class="ttl">rule_05.lock</span></div><div class="body seal"><span class="no">✕ 05</span><h3>Pull the liquidity</h3><p>LP is locked permanently when the coin graduates from the bonding curve.</p></div></div>
+      <div class="win"><div class="bar"><span class="ttl">rule_06.lock</span></div><div class="body seal"><span class="no">✕ 06</span><h3>Skip a draw</h3><p>Windows run on the UTC clock. If a pot is charged, it opens on time.</p></div></div>
+    </div>
+  </div>
+
+  <!-- capsule notes (unique) -->
+  <div class="sec" id="notes">
+    <div class="sec-h"><div><div class="eyebrow"><span class="tag g">New · Time capsule notes</span></div><h2>Seal a note to <span class="grad">future you.</span></h2></div><p class="lead">Write a call, a price target or a reminder, then seal it until a capsule opens. The page shows its SHA-256 fingerprint now, so you can prove later what you wrote today. Notes stay in this browser.</p></div>
+    <div class="g2">
+      <div class="win"><div class="bar"><span class="ttl">new_note.txt</span></div><div class="body" style="display:grid;gap:14px">
+        <div class="field"><label for="nText">Your note</label><textarea id="nText" maxlength="500" placeholder="e.g. Holding 4 windows straight. Calling it now: first $CAPSOL pot clears 10 SOL."></textarea></div>
+        <div class="field"><label for="nWhen">Unseal when</label><select id="nWhen"><option value="1">Next 1-hour opening</option><option value="4" selected>Next 4-hour opening ($CAPSOL)</option><option value="24">Next daily opening (00:00 UTC)</option><option value="168">One week from now</option></select></div>
+        <div class="cta"><button class="btn" id="nSeal" type="button">Seal note</button><span class="note" id="nCount">0 / 500</span></div>
+      </div></div>
+      <div class="win"><div class="bar"><span class="ttl">sealed_notes/</span></div><div class="body"><div class="notes" id="nList"></div></div></div>
+    </div>
+  </div>
+
+  <!-- $CAPSOL streams -->
+  <div class="sec">
+    <div class="sec-h"><div><div class="eyebrow"><span class="tag p">$CAPSOL · pre-launch</span></div><h2>Two streams. <span class="glow">One coin.</span></h2></div><a class="btn ghost sm" href="#winners">All proofs →</a></div>
+    <div class="g2">
+      <div class="win"><div class="bar"><span class="ttl">stream_01.dll</span></div><div class="body" style="display:grid;gap:10px">
+        <span class="tag g" style="justify-self:start">Every 4 hours · 1 winner</span>
+        <h3 style="font-size:34px">Its own capsule</h3>
+        <p class="dim" style="margin:0">1% of every $CAPSOL trade charges its capsule. Every 4 hours, one holder receives the whole thing.</p>
+        <div class="inset" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><span class="px dim" style="font-size:10px">Next opening</span><b class="num glow" id="s1Cd" style="font-family:var(--display);font-size:28px;font-weight:400">--:--:--</b></div>
+      </div></div>
+      <div class="win"><div class="bar"><span class="ttl">stream_02.dll</span></div><div class="body" style="display:grid;gap:10px">
+        <span class="tag m" style="justify-self:start">Every hour · 5 winners</span>
+        <h3 style="font-size:34px">Platform revenue</h3>
+        <p class="dim" style="margin:0">30% of Capsol's 1% fee on every coin is split between five $CAPSOL holders each hour.</p>
+        <div class="inset" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><span class="px dim" style="font-size:10px">Next opening</span><b class="num" id="s2Cd" style="font-family:var(--display);font-size:28px;font-weight:400;color:var(--magenta)">--:--:--</b></div>
+      </div></div>
+    </div>
+    <div class="win"><div class="bar"><span class="ttl">latest_openings.log</span></div><div class="body">
+      <div class="empty"><div class="art">[ ======== ]
+[  SEALED  ]
+[ ======== ]</div><b>No openings yet</b><p>The first proof posts here after Genesis. Every opening will show the pot, the winning wallet and a replayable proof.</p></div>
+    </div></div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="sec">
+    <div class="sec-h"><div><div class="eyebrow"><span class="tag b">Before you buy</span></div><h2>Questions</h2></div><a class="btn ghost sm" href="#docs">Read the docs</a></div>
+    <div class="faq">
+      <details><summary>Do I have to stake or lock my coins?</summary><p>No. You just hold them in your own wallet. Tickets are read from your balance across the window.</p></details>
+      <details><summary>What happens if I sell before the window ends?</summary><p>Your tickets for that window are void and your streak resets. You keep everything you sold for, and nothing is taken.</p></details>
+      <details><summary>How is the winner picked?</summary><p>Five minutes before opening, the ticket list freezes and its hash is published. Chainlink VRF then supplies a random seed, and the winning index is that seed modulo the total ticket count. Anyone can replay it in the Proof Replayer on the Winners page.</p></details>
+      <details><summary>Why square-root tickets?</summary><p>So one whale can't buy the whole draw. $50 is one unit and tickets are the square root of units, which makes small and mid-size holders count.</p></details>
+      <details><summary>Where is the $CAPSOL contract address?</summary><p>It's posted on our X at launch. It will also appear on the $CAPSOL page here once it's live.</p></details>
+      <details><summary>Is this an investment?</summary><p>No. Capsol is not an investment product. Memecoins can go to zero, and only one holder is paid per window.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== EXPLORE ===================== -->
+<section class="view" data-view="explore" hidden>
+  <div class="sec-h"><div><div class="eyebrow"><span class="tag g">Explore</span></div><h2>All <span class="grad">capsules</span></h2></div></div>
+  <div class="g3">
+    <div class="win"><div class="body kv"><span>Total market cap</span><b>—</b><span class="note" style="text-transform:none;font-family:var(--mono);letter-spacing:0">Live after Genesis</span></div></div>
+    <div class="win"><div class="body kv"><span>Tickets in play</span><b>—</b><span class="note" style="text-transform:none;font-family:var(--mono);letter-spacing:0">Live after Genesis</span></div></div>
+    <div class="win"><div class="body kv"><span>In all pots</span><b>—</b><span class="note" style="text-transform:none;font-family:var(--mono);letter-spacing:0">Live after Genesis</span></div></div>
+  </div>
+  <div class="toolbar">
+    <div class="search field"><input type="text" id="xSearch" placeholder="Search by name or ticker" aria-label="Search capsules"></div>
+    <button class="btn ghost sm" id="xClear" type="button">Clear search</button>
+    <div class="seg" role="group" aria-label="View"><button type="button" id="vCards" aria-pressed="true">Capsules</button><button type="button" id="vTable" aria-pressed="false">Table</button></div>
+  </div>
+  <div class="cards" id="xCards"></div>
+  <div class="tblwrap" id="xTableWrap" hidden><table><thead><tr><th>Coin</th><th>Market cap</th><th>24h</th><th>Bonding curve</th><th>Pot</th><th>Tickets</th><th>Window</th><th>Next draw</th></tr></thead><tbody id="xTable"></tbody></table></div>
+  <div class="empty" id="xEmpty" hidden><b>No capsules match</b><p>Try a different name or ticker, or clear the search.</p></div>
+  <p class="note">Coins you draft on the Launch page show here as drafts, visible only to you, until launches open.</p>
+</section>
+
+<!-- ===================== COIN ===================== -->
+<section class="view" data-view="coin" hidden>
+  <div class="sec-h">
+    <div style="display:flex;gap:14px;align-items:center">
+      <div class="cimg" style="width:72px;height:72px"><svg viewBox="0 0 46 30"><rect x="2" y="2" width="42" height="26" rx="13" fill="#9945FF"/><path d="M23 2h8a13 13 0 0 1 0 26h-8z" fill="#14F195"/><rect x="2" y="2" width="42" height="26" rx="13" fill="none" stroke="#ECE8FF" stroke-width="2"/></svg></div>
+      <div><div class="eyebrow" style="margin-bottom:4px"><span class="tag g">#1</span><span class="tag p">Genesis</span></div><h2>Capsol Genesis <span class="glow">$CAPSOL</span></h2></div>
+    </div>
+    <a class="btn ghost sm" id="coinScan" href="https://solscan.io" target="_blank" rel="noopener">View on Solscan ↗</a>
+  </div>
+  <div class="g4">
+    <div class="win"><div class="body kv"><span>Window</span><b>4 hours</b></div></div>
+    <div class="win"><div class="body kv"><span>Pot</span><b data-bal>—</b></div></div>
+    <div class="win"><div class="body kv"><span>Next opening</span><b class="glow num" id="coinCd">--:--:--</b></div></div>
+    <div class="win"><div class="body kv"><span>Contract</span><b style="font-size:20px;font-family:var(--mono);overflow-wrap:anywhere" id="coinCa">Posted on X</b></div></div>
+  </div>
+  <p class="note" style="margin:0">The entire pot goes to one holder when the window closes. The ticket list freezes 5 minutes earlier, at <span id="coinFreeze">--:--</span> UTC.</p>
+  <div class="coin-grid">
+    <div class="win"><div class="bar"><span class="ttl">chart.exe</span><span class="ctl"><i>_</i><i>□</i><i>×</i></span></div><div class="body" style="display:grid;gap:12px">
+      <div class="tabsline" aria-hidden="true"><button type="button">1m</button><button type="button">5m</button><button type="button">15m</button><button type="button">1h</button><button type="button">4h</button><button type="button">1d</button></div>
+      <div class="nosignal"><canvas id="noise"></canvas><div class="msg"><b>NO SIGNAL</b><span class="dim">The price chart switches on when $CAPSOL starts trading.</span></div></div>
+    </div></div>
+    <div class="win"><div class="bar"><span class="ttl">trade.exe</span></div><div class="body" style="display:grid;gap:14px">
+      <div class="bs" role="group" aria-label="Side"><button type="button" class="buy" id="sBuy" aria-pressed="true">Buy</button><button type="button" class="sell" id="sSell" aria-pressed="false">Sell</button></div>
+      <div class="field"><label for="tAmt">Amount (SOL)</label><input id="tAmt" type="number" min="0" step="0.1" value="0.5"></div>
+      <div class="quick"><button type="button" data-q="0.1">0.1</button><button type="button" data-q="0.5">0.5</button><button type="button" data-q="1">1</button><button type="button" data-q="max">Max</button></div>
+      <div class="field"><label for="tPx">SOL price in USD</label><input id="tPx" type="number" min="0" step="0.01" placeholder="loading…"></div>
+      <div class="inset" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="flabel">Tickets you'd get</span><b class="glow num" id="tTix" style="font-family:var(--display);font-size:34px;font-weight:400">—</b></div>
+      <button class="btn" id="tGo" type="button" disabled>Trading opens at Genesis</button>
+      <a class="link" id="tScan" href="https://solscan.io" target="_blank" rel="noopener" style="font-size:13px">View on Solscan ↗</a>
+    </div></div>
+  </div>
+  <div class="win"><div class="bar"><span class="ttl">holders.db</span></div><div class="body"><div class="tblwrap"><table><thead><tr><th>Wallet</th><th>Share of supply</th><th>Tickets</th><th>Streak</th></tr></thead><tbody><tr><td class="empty-row" colspan="4">No holders yet. The holder list and every wallet's tickets show here once $CAPSOL is trading.</td></tr></tbody></table></div></div></div>
+</section>
+
+<!-- ===================== OPENINGS ===================== -->
+<section class="view" data-view="openings" hidden>
+  <div class="sec-h"><div><div class="eyebrow"><span class="tag b">Openings</span></div><h2>The <span class="grad">opening clock</span></h2></div><p class="lead">All windows line up to UTC. A 4-hour coin opens at 00:00, 04:00, 08:00 and so on.</p></div>
+  <div class="clock-grid">
+    <div class="win"><div class="bar"><span class="ttl">clock24.scr</span></div><div class="body" style="display:grid;gap:12px">
+      <canvas class="dial" id="dial" width="840" height="840" aria-label="24-hour opening clock"></canvas>
+      <div class="legend"><span><i style="background:var(--green)"></i>$CAPSOL pot draws</span><span><i style="background:var(--magenta)"></i>Revenue draws</span><span><i style="background:var(--blue)"></i>Now</span></div>
+      <div class="inset" style="text-align:center"><span class="flabel">Next opening</span><div class="glow num" style="font-family:var(--display);font-size:44px;line-height:1.1" id="dialNext">--:--:--</div><div class="note" id="dialNextL">—</div></div>
+    </div></div>
+    <div class="win"><div class="bar"><span class="ttl">schedule.csv</span></div><div class="body">
+      <div class="tblwrap"><table><thead><tr><th>UTC time</th><th>Your time</th><th>Coin</th><th>Window</th><th>Expected pot</th><th>Status</th></tr></thead><tbody id="sched"></tbody></table></div>
+      <p class="note">Expected pots show once coins are trading. More coins join the schedule as they launch.</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- ===================== WINNERS ===================== -->
+<section class="view" data-view="winners" hidden>
+  <div class="sec-h"><div><div class="eyebrow"><span class="tag g">Winners &amp; proofs</span></div><h2>Every win, <span class="glow">on the record.</span></h2></div></div>
+  <div class="g2">
+    <div class="win"><div class="bar"><span class="ttl">recent_winners.log</span></div><div class="body"><div class="tblwrap"><table><thead><tr><th>Wallet</th><th>Coin</th><th>Tickets</th><th>Time</th><th>Prize</th></tr></thead><tbody><tr><td class="empty-row" colspan="5">No winners yet. The first opening happens after Genesis.</td></tr></tbody></table></div></div></div>
+    <div class="win"><div class="bar"><span class="ttl">leaderboard.hi</span></div><div class="body"><div class="tblwrap"><table><thead><tr><th>Rank</th><th>Wallet</th><th>Wins</th></tr></thead><tbody><tr><td class="empty-row" colspan="3">The leaderboard fills in as capsules open.</td></tr></tbody></table></div></div></div>
+  </div>
+
+  <div class="win" id="replayer"><div class="bar"><span class="ttl">proof_replayer.exe · new</span><span class="ctl"><i>?</i></span></div><div class="body calc">
+    <div style="display:grid;gap:14px">
+      <p class="dim" style="margin:0">Check any draw yourself. Paste the frozen ticket list and the VRF seed from a proof. This tool hashes the list, combines it with the seed and finds the winning ticket. It runs entirely in your browser.</p>
+      <div class="field"><label for="rList">Frozen list · one "wallet,tickets" per line</label><textarea id="rList" spellcheck="false" style="min-height:150px;font-size:13px"></textarea></div>
+      <div class="field"><label for="rSeed">VRF seed (hex)</label><input id="rSeed" type="text" spellcheck="false"></div>
+      <div class="cta"><button class="btn" id="rRun" type="button">Replay draw</button><button class="btn ghost sm" id="rEx" type="button">Load example</button></div>
+      <p class="note" style="margin:0">The prefilled values are a made-up example for testing the method. They are not a real draw.</p>
+    </div>
+    <div style="display:grid;gap:14px;align-content:start">
+      <div class="inset proof-out" id="rOut"><div><span>Status</span><code>Waiting for input</code></div></div>
+      <div class="inset">
+        <span class="flabel">Method</span>
+        <ol style="margin:8px 0 0;padding-left:20px;color:#CFC8F5;font-size:13.5px;display:grid;gap:4px">
+          <li>List hash = SHA-256 of the frozen list, one line per wallet.</li>
+          <li>Draw hash = SHA-256 of seed + ":" + list hash.</li>
+          <li>Index = draw hash as a number, modulo total tickets.</li>
+          <li>Walk the list adding tickets. The wallet whose range holds the index wins.</li>
+        </ol>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ===================== LAUNCH ===================== -->
+<section class="view" data-view="launch" hidden>
+  <div class="sec-h"><div><div class="eyebrow"><span class="tag p">Launch</span><span class="tag a">About a minute · 0.03 SOL</span></div><h2>Launch a <span class="grad">capsule coin</span></h2></div><p class="lead">Every coin uses the same ticket rules. You choose the name, the fee split and how often the pot opens.</p></div>
+  <div class="wizard">
+    <div style="display:grid;gap:18px">
+      <div class="win"><div class="bar"><span class="ttl">step 1 · name_your_coin</span></div><div class="body wstep">
+        <h3><span class="n">1</span>Name your coin</h3>
+        <div class="upload"><label class="cimg" for="lImg" id="lImgBox" title="Upload image"><span class="px" style="font-size:9px;color:var(--dim)">+ IMG</span></label><input id="lImg" type="file" accept="image/*" class="sr"><div class="note">PNG, JPG or GIF. Square works best.</div></div>
+        <div class="g2" style="gap:14px"><div class="field"><label for="lName">Name</label><input id="lName" type="text" maxlength="32" placeholder="Moon Capsule"></div><div class="field"><label for="lTick">Ticker</label><input id="lTick" type="text" maxlength="10" placeholder="MOON"></div></div>
+        <div class="field"><label for="lDesc">Description (optional)</label><textarea id="lDesc" maxlength="280" style="min-height:70px" placeholder="What's your coin about?"></textarea></div>
+        <div class="g3" style="gap:12px"><div class="field"><label for="lWeb">Website</label><input id="lWeb" type="url" placeholder="https://"></div><div class="field"><label for="lX">X</label><input id="lX" type="url" placeholder="https://x.com/"></div><div class="field"><label for="lTg">Telegram</label><input id="lTg" type="url" placeholder="https://t.me/"></div></div>
+      </div></div>
+      <div class="win"><div class="bar"><span class="ttl">step 2 · share_the_fee</span></div><div class="body wstep">
+        <h3><span class="n">2</span>Share the fee</h3>
+        <p class="dim" style="margin:0">Pot plus creator can't go over 2%. The pot gets at least 0.5%.</p>
+        <div class="field"><label for="lSplit">Pot <b id="lPotV" style="color:var(--green)">1.50%</b> · Creator <b id="lCrV" style="color:var(--purple)">0.50%</b></label><input id="lSplit" type="range" min="0.5" max="2" step="0.05" value="1.5"></div>
+        <div class="cmp inset"><div class="row"><span>Pot</span><div class="track"><i id="lPotBar" style="background:var(--green)"></i></div><b id="lPotB">1.50%</b></div><div class="row"><span>Creator</span><div class="track"><i id="lCrBar" style="background:var(--purple)"></i></div><b id="lCrB">0.50%</b></div><div class="row"><span>Platform</span><div class="track"><i style="width:50%;background:var(--blue)"></i></div><b>1.00%</b></div></div>
+      </div></div>
+      <div class="win"><div class="bar"><span class="ttl">step 3 · payout_frequency</span></div><div class="body wstep">
+        <h3><span class="n">3</span>Payout frequency</h3>
+        <div class="flabel">Window</div>
+        <div class="opts" id="lWin"><button type="button" data-v="1" aria-pressed="false">1 hour</button><button type="button" data-v="4" aria-pressed="true">4 hours</button><button type="button" data-v="12" aria-pressed="false">12 hours</button><button type="button" data-v="24" aria-pressed="false">Daily</button></div>
+        <div class="flabel">Pay winners in</div>
+        <div class="opts" id="lCur"><button type="button" data-v="SOL" aria-pressed="true">SOL</button><button type="button" data-v="COIN" aria-pressed="false">Your coin</button></div>
+      </div></div>
+    </div>
+    <div class="sticky">
+      <div class="win"><div class="bar"><span class="ttl">preview · how it will look in explore</span></div><div class="body" id="lPrev"></div></div>
+      <div class="win"><div class="bar"><span class="ttl">estimator.exe</span></div><div class="body" style="display:grid;gap:12px">
+        <div class="field"><label for="lVol">Daily trading volume you expect (USD)</label><input id="lVol" type="number" min="0" step="1000" value="50000"></div>
+        <div class="out-row"><div class="inset kv"><span>Pot per window</span><b class="glow" id="lPotEst">$125</b></div><div class="inset kv"><span>You earn / day</span><b style="color:var(--purple)" id="lCrEst">$250</b></div></div>
+        <p class="note" style="margin:0">A straight calculation from the volume you type in. It is not a forecast.</p>
+        <div class="err" id="lErr" hidden></div>
+        <button class="btn" id="lGo" type="button">Launch coin · 0.03 SOL</button>
+        <button class="btn ghost sm" id="lSave" type="button">Save draft</button>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== $CAPSOL ===================== -->
+<section class="view" data-view="capsol" hidden>
+  <div class="win banner"><div class="bar"><span class="ttl">$CAPSOL.nfo</span><span class="ctl"><i>_</i><i>□</i><i>×</i></span></div><div class="body">
+    <div>
+      <div class="eyebrow"><span class="tag a"><i class="dot"></i>Launch imminent</span><span class="tag g">LP permanent lock</span><span class="tag b">Meteora DBC</span></div>
+      <h2>The first <span class="grad">capsule.</span></h2>
+      <p class="lead" style="margin-top:12px">$CAPSOL is Capsol's own coin. It has the same capsule as every other coin, plus a share of the platform's revenue paid to five holders every hour. The team allocation is 0%.</p>
+      <div class="inset" style="margin-top:16px;display:grid;gap:8px"><span class="flabel">Contract address</span><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><code id="caTxt" style="flex:1;min-width:0;overflow-wrap:anywhere;color:var(--green)">Posted on X at launch</code><button class="btn sm" id="caCopy" type="button">Copy CA</button></div></div>
+      <div class="cta" style="margin-top:14px"><a class="btn p" id="caX" href="https://x.com/" target="_blank" rel="noopener">Follow on X</a><a class="btn ghost" href="#coin">Coin page</a></div>
+    </div>
+    <div class="facts">
+      <div class="inset"><b class="glow">1B</b><span>Supply, fixed</span></div>
+      <div class="inset"><b style="color:var(--purple)">0%</b><span>Team allocation</span></div>
+      <div class="inset"><b style="color:var(--blue)">4h</b><span>Own capsule window</span></div>
+      <div class="inset"><b style="color:var(--magenta)">5 / hr</b><span>Revenue winners</span></div>
+    </div>
+  </div></div>
+  <div class="g2">
+    <div class="win"><div class="bar"><span class="ttl">stream_01.dll</span></div><div class="body" style="display:grid;gap:8px"><h3 style="font-size:34px">Its own capsule</h3><p class="dim" style="margin:0">1% of every $CAPSOL trade, paid to one holder every 4 hours.</p><b class="num glow" style="font-family:var(--display);font-size:32px;font-weight:400" id="c1Cd">--:--:--</b></div></div>
+    <div class="win"><div class="bar"><span class="ttl">stream_02.dll</span></div><div class="body" style="display:grid;gap:8px"><h3 style="font-size:34px">Platform revenue</h3><p class="dim" style="margin:0">30% of the 1% platform fee on every Capsol coin, split between 5 holders each hour.</p><b class="num" style="font-family:var(--display);font-size:32px;font-weight:400;color:var(--magenta)" id="c2Cd">--:--:--</b></div></div>
+  </div>
+  <div class="win"><div class="bar"><span class="ttl">roadmap.txt</span></div><div class="body"><div class="g4">
+    <div class="inset"><span class="tag g">Stage 01</span><h3 style="font-size:28px;margin-top:8px">Genesis</h3><p class="dim" style="margin:4px 0 0;font-size:13.5px">$CAPSOL launches. Its capsule and revenue draws switch on.</p></div>
+    <div class="inset"><span class="tag p">Stage 02</span><h3 style="font-size:28px;margin-top:8px">Open launches</h3><p class="dim" style="margin:4px 0 0;font-size:13.5px">Anyone can launch a capsule coin from the Launch page.</p></div>
+    <div class="inset"><span class="tag b">Stage 03</span><h3 style="font-size:28px;margin-top:8px">Streaks</h3><p class="dim" style="margin:4px 0 0;font-size:13.5px">Streak bonuses and holder profiles go live across all coins.</p></div>
+    <div class="inset"><span class="tag m">Stage 04</span><h3 style="font-size:28px;margin-top:8px">Mega capsule</h3><p class="dim" style="margin:4px 0 0;font-size:13.5px">A weekly capsule fed by every coin, for $CAPSOL holders.</p></div>
+  </div></div></div>
+</section>
+
+<!-- ===================== DOCS ===================== -->
+<section class="view" data-view="docs" hidden>
+  <div class="sec-h"><div><div class="eyebrow"><span class="tag b">Docs</span></div><h2>How <span class="grad">Capsol</span> works</h2></div></div>
+  <div class="docs">
+    <nav aria-label="Docs"><a href="#docs" data-jump="d-window">Windows</a><a href="#docs" data-jump="d-tickets">Tickets</a><a href="#docs" data-jump="d-winners">Winners</a><a href="#docs" data-jump="d-fees">Fees</a><a href="#docs" data-jump="d-proof">Proof</a><a href="#docs" data-jump="d-custody">Disclosure</a><a href="#docs" data-jump="d-risk">Risk</a><a href="#docs" data-jump="d-term">Terminal commands</a></nav>
+    <article>
+      <div class="win" id="d-window"><div class="bar"><span class="ttl">01_windows.txt</span></div><div class="body"><h3>Windows</h3><p>Fees collect for one window and the draw happens at its end. Windows line up to UTC, so a 4-hour coin opens at 00:00, 04:00, 08:00, 12:00, 16:00 and 20:00.</p>
+        <div class="tl"><div><b>T+0:00</b>Window opens</div><div><b>T+1:00</b>25% hold mark</div><div><b>T+3:55</b>List freezes, hash posted</div><div><b>T+4:00</b>VRF draw</div><div><b>T+4:01</b>Payout + proof</div></div>
+        <p>Your balance is time-weighted (TWAB) across the window, so a last-second buy doesn't count fully.</p></div></div>
+      <div class="win" id="d-tickets"><div class="bar"><span class="ttl">02_tickets.txt</span></div><div class="body"><h3>Tickets</h3><ul><li>$50 of time-weighted holdings is one unit.</li><li>Tickets = √units, rounded down.</li><li>You must hold for at least 25% of the window.</li><li>Streak bonus: +10% per full window held in a row, up to +50%.</li><li>No staking. Your coins never leave your wallet.</li></ul><p>Example: buy 2 minutes before the freeze and you get 0 tickets. Hold $16,900 for four full windows and you get √338 × 1.4 = 25 tickets.</p></div></div>
+      <div class="win" id="d-winners"><div class="bar"><span class="ttl">03_winners.txt</span></div><div class="body"><h3>Winners</h3><p>Each coin's capsule pays one winner per window. $CAPSOL's hourly revenue draw is the exception and pays five.</p></div></div>
+      <div class="win" id="d-fees"><div class="bar"><span class="ttl">04_fees.txt</span></div><div class="body"><h3>Fees</h3><ul><li>Platform: 1% fixed on every trade. 30% of that goes to $CAPSOL holders.</li><li>Pot: 0.5–2%, set by the creator.</li><li>Creator: 0–1.5%, set by the creator.</li><li>Pot plus creator is capped at 2%.</li><li>Launching a coin costs 0.03 SOL.</li></ul></div></div>
+      <div class="win" id="d-proof"><div class="bar"><span class="ttl">05_proof.txt</span></div><div class="body"><h3>Proof</h3><p>Every opening publishes four things together: the frozen list hash, the VRF seed, the winning index and the payout transaction signature. Paste them into the <a href="#winners">Proof Replayer</a> to check a draw yourself.</p></div></div>
+      <div class="win" id="d-custody"><div class="bar"><span class="ttl">06_disclosure.txt</span></div><div class="body"><h3>Disclosure</h3><p>For the minutes between a draw and its payout, the pot sits in a wallet Capsol controls. The payout signature in each proof shows when it left.</p></div></div>
+      <div class="win" id="d-risk"><div class="bar"><span class="ttl">07_risk.txt</span></div><div class="body"><h3>Risk</h3><p>Capsol is not an investment product. Buying any coin can lose all of the money you put in. Only one holder is paid per window, so most holders win nothing in any given window. Capsol may not be available where you live.</p></div></div>
+      <div class="win" id="d-term"><div class="bar"><span class="ttl">08_terminal.txt</span></div><div class="body"><h3>Terminal commands</h3><p>The terminal on the home page runs real commands. Press <code>/</code> anywhere to jump to it.</p><ul><li><code>help</code> lists every command</li><li><code>next</code> shows the next openings</li><li><code>odds 500</code> shows tickets for $500 held</li><li><code>fees</code>, <code>rules</code> and <code>capsol</code> print the specs</li><li><code>go explore</code> (or launch, openings, winners, docs) changes page</li><li><code>phosphor green</code> / <code>blue</code> / <code>solana</code> changes the screen tint</li><li><code>crt off</code> turns off scanlines</li><li><code>sound on</code> turns on retro beeps</li></ul></div></div>
+    </article>
+  </div>
+</section>
+
+<!-- ===================== PROFILE ===================== -->
+<section class="view" data-view="profile" hidden>
+  <div class="sec-h"><div><div class="eyebrow"><span class="tag g">Profile</span></div><h2 id="pAddr">Not connected</h2></div><div class="cta"><button class="btn ghost sm" id="pCopy" type="button">Copy address</button><button class="btn sm" id="pConn" type="button">Connect wallet</button></div></div>
+  <div id="pBody">
+    <div class="g3">
+      <div class="win"><div class="body kv"><span>Portfolio value</span><b data-bal>—</b></div></div>
+      <div class="win"><div class="body kv"><span>SOL balance</span><b data-bal id="pSol">—</b></div></div>
+      <div class="win"><div class="body kv"><span>Claimable creator fees</span><b data-bal>0 SOL</b><button class="btn sm" type="button" disabled style="justify-self:start;margin-top:6px">Claim fees →</button></div></div>
+    </div>
+    <div class="win" style="margin-top:22px"><div class="body" style="display:grid;gap:16px">
+      <div class="ptabs" role="tablist"><button role="tab" data-t="holdings" aria-selected="true" type="button">Holdings &amp; tickets</button><button role="tab" data-t="launched" aria-selected="false" type="button">Launched coins</button><button role="tab" data-t="fees" aria-selected="false" type="button">Creator fees</button><button role="tab" data-t="transfers" aria-selected="false" type="button">Transfers</button><button role="tab" data-t="rewards" aria-selected="false" type="button">Rewards</button><button role="tab" data-t="prefs" aria-selected="false" type="button">Preferences</button></div>
+      <div data-p="holdings"><div class="tblwrap"><table><thead><tr><th>Coin</th><th>Balance</th><th>Value</th><th>Tickets</th><th></th></tr></thead><tbody><tr><td class="empty-row" colspan="5">No Capsol coins in this wallet yet. Hold $50 or more of any coin to start earning tickets.</td></tr></tbody></table></div></div>
+      <div data-p="launched" hidden><div class="tblwrap"><table><thead><tr><th>Coin</th><th>Mint</th><th>Pot share</th><th>Window</th><th>Creator fees earned</th></tr></thead><tbody id="pLaunched"></tbody></table></div></div>
+      <div data-p="fees" hidden><div class="empty"><b>0 SOL claimable</b><p>Fees from coins you launch build up here. Claim them any time once launches open.</p></div></div>
+      <div data-p="transfers" hidden><div class="tblwrap"><table><thead><tr><th>Type</th><th>Amount</th><th>SOL change</th><th>Signature</th><th>Time</th></tr></thead><tbody><tr><td class="empty-row" colspan="5">No transfers yet.</td></tr></tbody></table></div></div>
+      <div data-p="rewards" hidden><div class="tblwrap"><table><thead><tr><th>Reward</th><th>Date</th><th>Coin</th><th>Prize</th><th>Status</th></tr></thead><tbody><tr><td class="empty-row" colspan="5">No wins yet. Every capsule you win shows here with its proof.</td></tr></tbody></table></div></div>
+      <div data-p="prefs" hidden style="max-width:640px">
+        <div class="toggle"><div><strong>Blur balances</strong><div class="note">Hide amounts when you share your screen.</div></div><button class="sw" id="prBlur" role="switch" aria-checked="false" type="button" aria-label="Blur balances"></button></div>
+        <div class="toggle"><div><strong>CRT scanlines</strong><div class="note">The retro monitor effect.</div></div><button class="sw" id="prCrt" role="switch" aria-checked="true" type="button" aria-label="CRT scanlines"></button></div>
+        <div class="toggle"><div><strong>Retro sounds</strong><div class="note">Beeps on clicks and commands.</div></div><button class="sw" id="prSnd" role="switch" aria-checked="false" type="button" aria-label="Retro sounds"></button></div>
+        <div class="toggle"><div><strong>Phosphor</strong><div class="note">Screen tint.</div></div><div class="opts" id="prPh"><button type="button" data-v="solana" aria-pressed="true">Solana</button><button type="button" data-v="blue" aria-pressed="false">Blue</button><button type="button" data-v="green" aria-pressed="false">Green</button></div></div>
+        <div class="toggle"><div><strong>Network</strong><div class="note">Capsol runs on Solana mainnet.</div></div><span class="tag g"><i class="dot"></i>Mainnet</span></div>
+        <div class="toggle"><div><strong>Default explorer</strong></div><div class="field" style="min-width:160px"><select id="prExp" aria-label="Default explorer"><option value="solscan">Solscan</option><option value="explorer">Solana Explorer</option><option value="solanafm">SolanaFM</option></select></div></div>
+        <div class="toggle" style="border:0"><div><strong>Disconnect</strong></div><button class="btn sm" id="prDisc" type="button" style="background:var(--red)">Disconnect</button></div>
+      </div>
+    </div></div>
+  </div>
+</section>
+</main>
+
+<footer><div class="wrap">
+  <div class="ft">
+    <div><div class="logo" style="margin-bottom:10px"><svg viewBox="0 0 46 30" aria-hidden="true" style="width:46px;height:30px"><rect x="2" y="2" width="42" height="26" rx="13" fill="#9945FF"/><path d="M23 2h8a13 13 0 0 1 0 26h-8z" fill="#14F195"/><rect x="2" y="2" width="42" height="26" rx="13" fill="none" stroke="#ECE8FF" stroke-width="2"/></svg><b class="grad">CAPSOL</b></div><p class="dim" style="margin:0;max-width:34ch">Every trade fills a capsule. Every window pays one holder.</p></div>
+    <div><h4>Product</h4><a href="#explore">Explore</a><a href="#openings">Openings</a><a href="#launch">Launch</a></div>
+    <div><h4>Trust</h4><a href="#winners">Winners &amp; proofs</a><a href="#capsol">$CAPSOL</a><a href="#docs">Docs</a></div>
+    <div><h4>Social</h4><a id="xF" href="https://x.com/" target="_blank" rel="noopener">X ↗</a><a id="tgF" href="https://t.me/" target="_blank" rel="noopener">Telegram ↗</a></div>
+  </div>
+  <p class="note" style="margin-top:26px">© 2026 Capsol · Not an investment product · C:\&gt; _</p>
+</div></footer>
+
+<nav class="mnav" aria-label="Mobile">
+  <a href="#home" data-nav="home"><span>⌂</span>Home</a>
+  <a href="#explore" data-nav="explore"><span>◎</span>Explore</a>
+  <a href="#launch" data-nav="launch"><span>+</span>Launch</a>
+  <a href="#openings" data-nav="openings"><span>◷</span>Openings</a>
+  <a href="#winners" data-nav="winners"><span>★</span>Winners</a>
+</nav>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+/* ================= CONFIG — edit before deploying ================= */
+const CONFIG = {
+  X_URL: "https://x.com/",       // your project's X link
+  TG_URL: "https://t.me/",       // Telegram link ("" hides it)
+  CA: "",                        // $CAPSOL contract address, leave "" until launch
+  LIVE: false,                   // set true once $CAPSOL is trading (enables swap button)
+  RPC: "https://api.mainnet-beta.solana.com"
+};
+/* ================================================================= */
+const $=id=>document.getElementById(id), $$=s=>[...document.querySelectorAll(s)];
+const store={get(k,d){try{const v=localStorage.getItem("capsol_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem("capsol_"+k,JSON.stringify(v))}catch(e){}}};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const H=3600e3;
+function nextBoundary(hours,from=Date.now()){const p=hours*H;return Math.floor(from/p)*p+p}
+function cd(ms){ms=Math.max(0,ms);const s=Math.floor(ms/1e3);const d=Math.floor(s/86400);const h=Math.floor(s%86400/3600);return (d?d+"d ":"")+pad(h)+":"+pad(Math.floor(s%3600/60))+":"+pad(s%60)}
+const utc=t=>{const d=new Date(t);return pad(d.getUTCHours())+":"+pad(d.getUTCMinutes())};
+const loc=t=>new Date(t).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+let tt;function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,3400)}
+async function copy(text,label){try{await navigator.clipboard.writeText(text);toast(label+" copied")}catch(e){toast("Copy is blocked here. Select the text and copy it manually.")}}
+
+/* links */
+["xA","xF","supportA","caX"].forEach(id=>$(id).href=CONFIG.X_URL);
+if(CONFIG.TG_URL){$("tgA").href=$("tgF").href=CONFIG.TG_URL}else{$("tgA").hidden=$("tgF").hidden=true}
+
+/* ---------- sound ---------- */
+let AC=null,sound=store.get("sound",false);
+function beep(f=880,d=.05,type="square",v=.04){if(!sound)return;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+d);o.stop(AC.currentTime+d+.02)}catch(e){}}
+function setSound(on){sound=on;store.set("sound",on);$("sndWave").setAttribute("opacity",on?"1":".3");$("prSnd").setAttribute("aria-checked",on);if(on)beep(660,.08)}
+$("sndBtn").onclick=()=>{setSound(!sound);toast(sound?"Sound on":"Sound off")};
+$("prSnd").onclick=()=>setSound(!sound);
+document.addEventListener("click",e=>{if(e.target.closest(".btn,.nav a,.mnav a,.opts button,.seg button,.ptabs button"))beep(1200,.03)});
+
+/* ---------- prefs ---------- */
+function setPh(v){if(v==="solana")document.documentElement.removeAttribute("data-phosphor");else document.documentElement.setAttribute("data-phosphor",v);store.set("ph",v);$$("#prPh button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===v))}
+function setCrt(on){document.body.classList.toggle("no-crt",!on);store.set("crt",on);$("prCrt").setAttribute("aria-checked",on)}
+function setBlur(on){document.body.classList.toggle("blurred",on);store.set("blur",on);$("prBlur").setAttribute("aria-checked",on);$("menuBlurState").textContent=on?"on":"off"}
+$$("#prPh button").forEach(b=>b.onclick=()=>setPh(b.dataset.v));
+$("prCrt").onclick=()=>setCrt(document.body.classList.contains("no-crt"));
+$("prBlur").onclick=()=>setBlur(!document.body.classList.contains("blurred"));
+$("menuBlur").onclick=()=>setBlur(!document.body.classList.contains("blurred"));
+$("prExp").value=store.get("exp","solscan");$("prExp").onchange=()=>{store.set("exp",$("prExp").value);explorerLinks()};
+function explorerUrl(addr,kind="token"){const e=$("prExp").value;if(e==="explorer")return "https://explorer.solana.com/address/"+addr;if(e==="solanafm")return "https://solana.fm/address/"+addr;return "https://solscan.io/"+(kind==="account"?"account/":"token/")+addr}
+function explorerLinks(){if(CONFIG.CA){$("coinScan").href=$("tScan").href=explorerUrl(CONFIG.CA)}}
+setPh(store.get("ph","solana"));setCrt(store.get("crt",true));setBlur(store.get("blur",false));setSound(sound);
+
+/* ---------- router ---------- */
+const VIEWS=["home","explore","coin","openings","winners","launch","capsol","docs","profile"];
+function route(){let v=(location.hash||"#home").slice(1);if(!VIEWS.includes(v))v="home";
+  $$("[data-view]").forEach(s=>s.hidden=s.dataset.view!==v);
+  $$("[data-nav]").forEach(a=>a.classList.toggle("on",a.dataset.nav===v));
+  if(v==="openings")drawDial();if(v==="explore")renderExplore();if(v==="profile")renderProfile();
+  window.scrollTo(0,0)}
+addEventListener("hashchange",route);
+$$("[data-jump]").forEach(a=>a.addEventListener("click",e=>{e.preventDefault();$(a.dataset.jump).scrollIntoView({behavior:"smooth",block:"start"})}));
+
+/* ---------- strip ---------- */
+(function(){const items=["Hold the coin · win the whole capsule","Every trade charges a capsule","√ tickets · fair by math","List frozen 5 min before opening","Chainlink VRF picks one ticket","Payouts in SOL with public proofs","0% team · 1B supply","$CAPSOL genesis stage","No staking · no lock-up · no claiming","Press / to open the terminal"];const h=items.map(t=>"<span>★ "+t+"</span>").join("");$("strip").innerHTML=h+h})();
+
+/* crumbs illustration */
+$("crumbs").innerHTML="<i></i>".repeat(96);
+
+/* ---------- clocks ---------- */
+function tick(){const now=Date.now();const d=new Date(now);
+  $("utcNow").textContent="UTC "+pad(d.getUTCHours())+":"+pad(d.getUTCMinutes())+":"+pad(d.getUTCSeconds());
+  const n4=nextBoundary(4),n1=nextBoundary(1);
+  const prog=1-(n4-now)/(4*H);
+  $("heroFill").style.width=(prog*100).toFixed(2)+"%";
+  ["heroCd","s1Cd","coinCd","c1Cd"].forEach(id=>$(id).textContent=cd(n4-now));
+  ["s2Cd","c2Cd"].forEach(id=>$(id).textContent=cd(n1-now));
+  $("coinFreeze").textContent=utc(n4-5*60e3);
+  const nx=Math.min(n1,n4);$("dialNext").textContent=cd(nx-now);$("dialNextL").textContent=(n4===n1?"$CAPSOL pot + revenue draw":"Revenue draw")+" at "+utc(nx)+" UTC · "+loc(nx)+" your time";
+  if(document.querySelector('[data-view="openings"]').hidden===false && d.getUTCSeconds()%5===0)drawDial();
+  renderNotes(true);
+}
+setInterval(tick,1000);
+
+/* ---------- schedule + dial ---------- */
+function renderSched(){const rows=[];let t=nextBoundary(1);for(let i=0;i<10;i++){const is4=new Date(t).getUTCHours()%4===0;
+  if(is4)rows.push([t,"$CAPSOL","4h pot · 1 winner"]);rows.push([t,"$CAPSOL","1h revenue · 5 winners"]);t+=H}
+  $("sched").innerHTML=rows.slice(0,12).map(r=>`<tr><td class="num">${utc(r[0])}</td><td class="num dim">${loc(r[0])}</td><td>${r[1]}</td><td>${r[2]}</td><td class="dim">—</td><td><span class="status-pill" style="color:${CONFIG.LIVE?"var(--green)":"var(--amber)"}">${CONFIG.LIVE?"Scheduled":"Genesis · not live"}</span></td></tr>`).join("")}
+function drawDial(){const c=$("dial"),x=c.getContext("2d"),W=c.width,R=W/2,cx=R,cy=R;x.clearRect(0,0,W,W);
+  const css=getComputedStyle(document.documentElement);const G=css.getPropertyValue("--green").trim()||"#14F195",P=css.getPropertyValue("--purple").trim(),M=css.getPropertyValue("--magenta").trim(),B=css.getPropertyValue("--blue").trim(),T=css.getPropertyValue("--text").trim(),F=css.getPropertyValue("--faint").trim();
+  const ang=h=>(h/24)*Math.PI*2-Math.PI/2;
+  x.fillStyle="#07051A";x.beginPath();x.arc(cx,cy,R-8,0,7);x.fill();
+  x.strokeStyle=P;x.lineWidth=6;x.beginPath();x.arc(cx,cy,R-12,0,7);x.stroke();
+  // rings
+  for(const r of [R*0.74,R*0.5]){x.strokeStyle="rgba(153,69,255,.25)";x.lineWidth=2;x.setLineDash([6,10]);x.beginPath();x.arc(cx,cy,r,0,7);x.stroke()}x.setLineDash([]);
+  // window progress arc
+  const now=new Date();const hNow=now.getUTCHours()+now.getUTCMinutes()/60+now.getUTCSeconds()/3600;const start=Math.floor(hNow/4)*4;
+  x.strokeStyle=G;x.globalAlpha=.25;x.lineWidth=R*0.2;x.beginPath();x.arc(cx,cy,R*0.62,ang(start),ang(hNow));x.stroke();x.globalAlpha=1;
+  for(let h=0;h<24;h++){const a=ang(h),is4=h%4===0;const r1=R-30,r2=R-(is4?70:48);
+    x.strokeStyle=is4?T:F;x.lineWidth=is4?6:3;x.beginPath();x.moveTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1);x.lineTo(cx+Math.cos(a)*r2,cy+Math.sin(a)*r2);x.stroke();
+    // revenue dot hourly
+    x.fillStyle=M;x.beginPath();x.arc(cx+Math.cos(a)*R*0.5,cy+Math.sin(a)*R*0.5,7,0,7);x.fill();
+    if(is4){x.fillStyle=G;x.shadowColor=G;x.shadowBlur=24;x.beginPath();x.arc(cx+Math.cos(a)*R*0.74,cy+Math.sin(a)*R*0.74,16,0,7);x.fill();x.shadowBlur=0;
+      x.fillStyle=T;x.font="44px VT323, monospace";x.textAlign="center";x.textBaseline="middle";x.fillText(pad(h),cx+Math.cos(a)*R*0.62,cy+Math.sin(a)*R*0.62)}}
+  // hand
+  const a=ang(hNow);x.strokeStyle=B;x.lineWidth=8;x.shadowColor=B;x.shadowBlur=20;x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+Math.cos(a)*(R-40),cy+Math.sin(a)*(R-40));x.stroke();x.shadowBlur=0;
+  x.fillStyle=B;x.beginPath();x.arc(cx,cy,16,0,7);x.fill();
+  x.fillStyle=T;x.font="34px VT323, monospace";x.textAlign="center";x.fillText("UTC",cx,cy+58);
+}
+
+/* ---------- odds lab ---------- */
+function tickets(usd,streak=0,hold=1){if(hold<.25)return 0;const u=Math.floor(Math.max(0,usd)/50);return Math.floor(Math.sqrt(u)*(1+.1*Math.min(5,streak)))}
+function odds(){const usd=+$("oUsd").value||0,st=+$("oStreak").value,ho=+$("oHold").value/100,pool=Math.max(1,+$("oPool").value||1);
+  $("oStreakV").textContent=st;$("oStreakP").textContent=st*10;$("oHoldV").textContent=Math.round(ho*100)+"%";
+  const u=Math.floor(usd/50),tix=tickets(usd,st,ho),sq=Math.floor(Math.sqrt(u)),wh=Math.floor(Math.sqrt(u*1000));
+  const total=Math.max(pool,tix),ch=tix/total;
+  $("oUnits").textContent=u.toLocaleString();$("oTix").textContent=tix.toLocaleString();
+  $("oChance").textContent=(ch*100).toFixed(ch<.001?3:2)+"%";$("oOneIn").textContent=tix?Math.round(1/ch).toLocaleString():"—";
+  const mx=Math.max(u,1);$("oLin").textContent=u.toLocaleString();$("oSq").textContent=sq.toLocaleString();$("oWh").textContent=wh.toLocaleString();
+  $("oLinBar").style.width=Math.min(100,u/mx*100)+"%";$("oSqBar").style.width=Math.min(100,sq/mx*100)+"%";$("oWhBar").style.width=Math.min(100,wh/mx*100)+"%";
+  $("oMsg").textContent=ho<.25?"You need to hold for at least 25% of the window, so this window gives 0 tickets.":u<1?"Hold at least $50 to get your first unit.":`A whale with 1,000× your money gets ${wh.toLocaleString()} tickets, about ${(wh/Math.max(sq,1)).toFixed(0)}× yours, not 1,000×.`}
+["oUsd","oStreak","oHold","oPool"].forEach(id=>$(id).addEventListener("input",odds));
+
+/* ---------- notes ---------- */
+async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+$("nText").addEventListener("input",()=>$("nCount").textContent=$("nText").value.length+" / 500");
+$("nSeal").onclick=async()=>{const text=$("nText").value.trim();if(!text){toast("Write a note first.");return}
+  const h=+$("nWhen").value;const unlock=h===168?Date.now()+168*H:nextBoundary(h);const created=Date.now();
+  let hash="";try{hash=await sha(created+"|"+text)}catch(e){hash="(hashing unavailable in this browser)"}
+  const notes=store.get("notes",[]);notes.unshift({text,unlock,created,hash});store.set("notes",notes.slice(0,30));
+  $("nText").value="";$("nCount").textContent="0 / 500";beep(440,.12,"sawtooth");toast("Note sealed until "+utc(unlock)+" UTC");renderNotes()};
+let lastNoteSig="";
+function renderNotes(fromTick){const notes=store.get("notes",[]);const now=Date.now();
+  const sig=notes.map(n=>n.unlock<=now?1:0).join("")+notes.length;
+  if(fromTick){$$(".ncd").forEach(el=>el.textContent=cd(+el.dataset.u-now));if(sig===lastNoteSig)return}
+  lastNoteSig=sig;
+  if(!notes.length){$("nList").innerHTML=`<div class="empty"><div class="art">  ____
+ |    |
+ |____|  ...empty</div><b>No sealed notes</b><p>Your first sealed note shows here with a countdown until it opens.</p></div>`;return}
+  $("nList").innerHTML=notes.map((n,i)=>{const open=n.unlock<=now;return `<div class="notecard"><div class="top"><span class="tag ${open?"g":"p"}">${open?"Unsealed":"Sealed"}</span><span class="dim num">${open?"Opened "+utc(n.unlock)+" UTC":"Opens in <b class='ncd glow' data-u='"+n.unlock+"'>"+cd(n.unlock-now)+"</b>"}</span></div>
+   <div class="msg ${open?"":"locked"}">${open?esc(n.text):"█".repeat(Math.min(40,Math.max(8,n.text.length/3|0)))}</div>
+   <div class="hash">sha256 ${esc(n.hash)}</div><div style="display:flex;gap:10px"><button class="link" data-ncopy="${i}" type="button">Copy fingerprint</button><button class="link" data-ndel="${i}" type="button" style="color:var(--red)">Delete</button></div></div>`}).join("")}
+$("nList").addEventListener("click",e=>{const c=e.target.dataset.ncopy,d=e.target.dataset.ndel;const notes=store.get("notes",[]);
+  if(c!=null)copy(notes[c].hash,"Fingerprint");if(d!=null){notes.splice(d,1);store.set("notes",notes);lastNoteSig="";renderNotes()}});
+
+/* ---------- terminal ---------- */
+const tlog=$("tlog");
+function out(html,cls){const d=document.createElement("div");if(cls)d.className=cls;d.innerHTML=html;tlog.appendChild(d);tlog.scrollTop=tlog.scrollHeight}
+const CMDS={
+  help:()=>out(`<span class="c-p">commands</span>
+  <span class="c-g">next</span>            next openings
+  <span class="c-g">odds</span> &lt;usd&gt; [streak]  tickets for a holding
+  <span class="c-g">fees</span>            where every trade's fee goes
+  <span class="c-g">rules</span>           six things nobody can do
+  <span class="c-g">capsol</span>          $CAPSOL specs
+  <span class="c-g">go</span> &lt;page&gt;       explore · openings · launch · winners · docs · coin · profile
+  <span class="c-g">phosphor</span> &lt;solana|blue|green&gt;
+  <span class="c-g">crt</span> on|off   <span class="c-g">sound</span> on|off
+  <span class="c-g">connect</span>         connect a Solana wallet
+  <span class="c-g">x</span>               open our X
+  <span class="c-g">clear</span>           clear the screen`),
+  next:()=>{const n=Date.now(),a=nextBoundary(4),b=nextBoundary(1);out(`<span class="c-g">$CAPSOL pot</span>   ${utc(a)} UTC  in ${cd(a-n)}\n<span class="c-m">revenue x5</span>    ${utc(b)} UTC  in ${cd(b-n)}\n<span class="c-d">list freezes 5 min before each opening</span>`)},
+  odds:(a)=>{const usd=+a[0];if(!(usd>=0)||a[0]==null){out('<span class="c-a">usage: odds 500  (optionally: odds 500 3 for a 3-window streak)</span>');return}
+    const st=Math.min(5,+a[1]||0),u=Math.floor(usd/50),t=tickets(usd,st,1);out(`$${usd.toLocaleString()} → <span class="c-b">${u}</span> units → √ → <span class="c-g">${t} tickets</span>${st?` <span class="c-d">(+${st*10}% streak)</span>`:""}\n<span class="c-d">1,000× that money would get ${Math.floor(Math.sqrt(u*1000))} tickets</span>`)},
+  fees:()=>out(`trade ──┬─ <span class="c-g">0.5–2%</span>  coin capsule → 1 holder\n        ├─ <span class="c-p">0–1.5%</span>  creator\n        └─ <span class="c-b">1.0%</span>    platform ── <span class="c-m">30%</span> → 5 $CAPSOL holders / hr\n<span class="c-d">pot + creator capped at 2%</span>`),
+  rules:()=>out(`<span class="c-a">sealed at launch:</span> fee split · winner choice · frozen list · supply · LP · draw schedule\n<span class="c-d">nobody can change these. not the creator. not capsol.</span>`),
+  capsol:()=>out(`<span class="c-p">$CAPSOL</span>  supply 1,000,000,000 · team 0%\n  own capsule: 1% of trades → 1 holder / 4h\n  revenue: 30% of platform fee → 5 holders / 1h\n  CA: <span class="c-g">${CONFIG.CA||"posted on X at launch"}</span>`),
+  go:(a)=>{const p=(a[0]||"").toLowerCase();if(VIEWS.includes(p)){out(`<span class="c-d">loading ${p}.exe …</span>`);setTimeout(()=>location.hash=p,250)}else out('<span class="c-a">usage: go explore | openings | launch | winners | docs | coin | capsol | profile</span>')},
+  phosphor:(a)=>{const v=(a[0]||"").toLowerCase();if(["solana","blue","green"].includes(v)){setPh(v);out(`phosphor set to <span class="c-g">${v}</span>`)}else out('<span class="c-a">usage: phosphor solana | blue | green</span>')},
+  crt:(a)=>{setCrt(a[0]!=="off");out("crt "+(a[0]==="off"?"off":"on"))},
+  sound:(a)=>{setSound(a[0]!=="off");out("sound "+(a[0]==="off"?"off":"on"))},
+  connect:()=>{connect()},
+  x:()=>{out(`opening <span class="c-b">${CONFIG.X_URL}</span>`);const l=document.createElement("a");l.href=CONFIG.X_URL;l.target="_blank";l.rel="noopener";document.body.appendChild(l);l.click();l.remove()},
+  clear:()=>{tlog.innerHTML=""},
+  whoami:()=>out(wallet?`<span class="c-g">${wallet}</span>`:'<span class="c-d">guest (not connected)</span>'),
+  gm:()=>out('<span class="c-g">gm. hold the coin, win the capsule.</span>'),
+  wagmi:()=>out('<span class="c-m">one of us is going to make it. that is literally the mechanic.</span>')
+};
+["explore","openings","launch","winners","docs","coin","profile"].forEach(p=>CMDS[p]=()=>CMDS.go([p]));
+function run(line){const raw=line.trim();if(!raw)return;out(`<span class="c-g">CAPSOL&gt;</span> ${esc(raw)}`);const [c,...a]=raw.split(/\s+/);const f=CMDS[c.toLowerCase()];
+  if(f){beep(900,.04);f(a)}else{beep(220,.12,"sawtooth");out(`<span class="c-a">'${esc(c)}' is not recognized as a command.</span> <span class="c-d">type help</span>`)}}
+$("tform").addEventListener("submit",e=>{e.preventDefault();run($("tcmd").value);$("tcmd").value=""});
+$("tchips").innerHTML=["help","next","odds 500","fees","capsol","phosphor blue"].map(c=>`<button type="button">${c}</button>`).join("");
+$("tchips").addEventListener("click",e=>{if(e.target.tagName==="BUTTON")run(e.target.textContent)});
+document.addEventListener("keydown",e=>{if(e.key==="/"&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();if(location.hash&&location.hash!=="#home")location.hash="home";setTimeout(()=>$("tcmd").focus(),50)}});
+(function boot(){const lines=[['<span class="c-d">CAPSOL BIOS v2.0.06  (C) 2026 Capsol Systems</span>'],['Memory test ........ <span class="c-g">640K OK</span>'],['Detecting chain .... <span class="c-p">Solana mainnet-beta</span>'],['Loading fee_router.sys ......... <span class="c-g">OK</span>'],['Loading vrf_chainlink.drv ...... <span class="c-g">OK</span>'],['Mounting capsules\\$CAPSOL ...... <span class="c-a">GENESIS</span>'],['Ticket rule: <span class="c-b">tickets = floor(√(usd/50))</span>'],[''],['<span class="c-g">READY.</span> Type <span class="c-g">help</span> or tap a command below.']];
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(reduce){lines.forEach(l=>out(l[0]));return}
+  let i=0;(function nx(){if(i>=lines.length)return;out(lines[i++][0]);setTimeout(nx,i<3?260:170)})()})();
+
+/* ---------- wallet ---------- */
+let wallet=null;
+const provider=()=>(window.phantom&&window.phantom.solana)||window.solflare||window.solana||null;
+const short=a=>a.slice(0,4)+"…"+a.slice(-4);
+async function connect(){const p=provider();if(!p){toast("No Solana wallet found. Install Phantom or Solflare.");out&&out('<span class="c-a">no wallet extension found</span>');return}
+  try{const r=await p.connect();wallet=(r&&r.publicKey?r.publicKey:p.publicKey).toString();setWalletUI();toast("Wallet connected");beep(1320,.08)}catch(e){toast("Connection cancelled.")}}
+async function disconnect(){try{const p=provider();p&&p.disconnect&&await p.disconnect()}catch(e){}wallet=null;setWalletUI();$("menu").hidden=true;toast("Disconnected")}
+function setWalletUI(){$("walletBtn").textContent=wallet?short(wallet):"Connect wallet";$("menuAddr").textContent=wallet?short(wallet)+".exe":"wallet.exe";$("walletBtn").setAttribute("aria-expanded","false");renderProfile()}
+$("walletBtn").onclick=()=>{if(!wallet){connect();return}const m=$("menu");m.hidden=!m.hidden;$("walletBtn").setAttribute("aria-expanded",String(!m.hidden))};
+document.addEventListener("click",e=>{if(!e.target.closest(".menu-wrap"))$("menu").hidden=true});
+$$("#menu a[data-ptab]").forEach(a=>a.addEventListener("click",()=>{$("menu").hidden=true;setTimeout(()=>ptab(a.dataset.ptab),30)}));
+$("logoutBtn").onclick=disconnect;$("prDisc").onclick=disconnect;$("pConn").onclick=()=>wallet?disconnect():connect();
+$("pCopy").onclick=()=>wallet?copy(wallet,"Address"):toast("Connect a wallet first.");
+
+/* ---------- profile ---------- */
+function ptab(t){$$(".ptabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.t===t));$$("[data-p]").forEach(p=>p.hidden=p.dataset.p!==t)}
+$$(".ptabs button").forEach(b=>b.onclick=()=>ptab(b.dataset.t));
+async function renderProfile(){$("pAddr").innerHTML=wallet?`<span class="glow">${short(wallet)}</span>`:"Not connected";$("pConn").textContent=wallet?"Disconnect":"Connect wallet";
+  const drafts=store.get("drafts",[]);
+  $("pLaunched").innerHTML=drafts.length?drafts.map(d=>`<tr><td>${esc(d.name||"Untitled")} <span class="dim">$${esc(d.tick||"—")}</span></td><td class="dim">Draft · not launched</td><td>${(+d.pot).toFixed(2)}%</td><td>${d.win}h</td><td class="dim">—</td></tr>`).join(""):`<tr><td class="empty-row" colspan="5">You haven't launched a coin yet. <a href="#launch">Launch one →</a></td></tr>`;
+  if(!wallet){$("pSol").textContent="—";return}
+  try{const r=await fetch(CONFIG.RPC,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({jsonrpc:"2.0",id:1,method:"getBalance",params:[wallet]})});const j=await r.json();$("pSol").textContent=(j.result.value/1e9).toFixed(4)+" SOL"}catch(e){$("pSol").textContent="Unavailable"}}
+
+/* ---------- explore ---------- */
+const CAPSOL_COIN={name:"Capsol Genesis",tick:"CAPSOL",win:4,genesis:true};
+function capsuleIcon(){return `<svg viewBox="0 0 46 30"><rect x="2" y="2" width="42" height="26" rx="13" fill="#9945FF"/><path d="M23 2h8a13 13 0 0 1 0 26h-8z" fill="#14F195"/><rect x="2" y="2" width="42" height="26" rx="13" fill="none" stroke="#ECE8FF" stroke-width="2"/></svg>`}
+let view="cards";
+function cardHTML(c,i){const n=nextBoundary(c.win);return `<a class="win ccard" href="${c.genesis?"#coin":"#launch"}" style="text-decoration:none;color:inherit"><div class="bar"><span class="ttl">${c.genesis?"#1 · genesis":"draft · only you"}</span></div><div class="body">
+  <div class="head"><div class="cimg">${c.img?`<img src="${c.img}" alt="">`:capsuleIcon()}</div><div style="min-width:0"><h3 style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name||"Untitled")}</h3><span class="dim">$${esc(c.tick||"TICKER")}</span></div></div>
+  <div class="mini"><div><span>Pot</span><b>—</b></div><div><span>Tickets</span><b>—</b></div><div><span>Holders</span><b>—</b></div></div>
+  <div><div style="display:flex;justify-content:space-between;font-size:12px" class="dim"><span>Bonding curve</span><span>to $50K</span></div><div class="curve"><i style="width:0"></i></div></div>
+  <div style="display:flex;justify-content:space-between;font-size:13px"><span class="tag ${c.genesis?"a":"p"}">${c.win}h window</span><span class="num">${c.genesis?"opens in <b class='glow'>"+cd(n-Date.now())+"</b>":"not launched"}</span></div>
+ </div></a>`}
+function renderExplore(){const q=$("xSearch").value.trim().toLowerCase();const list=[CAPSOL_COIN,...store.get("drafts",[])].filter(c=>!q||(c.name||"").toLowerCase().includes(q)||(c.tick||"").toLowerCase().includes(q));
+  $("xEmpty").hidden=list.length>0;$("xCards").hidden=view!=="cards"||!list.length;$("xTableWrap").hidden=view!=="table"||!list.length;
+  $("xCards").innerHTML=list.map(cardHTML).join("");
+  $("xTable").innerHTML=list.map(c=>`<tr><td><b>${esc(c.name||"Untitled")}</b> <span class="dim">$${esc(c.tick||"")}</span></td><td class="dim">—</td><td class="dim">—</td><td class="dim">0%</td><td class="dim">—</td><td class="dim">—</td><td>${c.win}h</td><td class="num">${c.genesis?cd(nextBoundary(c.win)-Date.now()):"draft"}</td></tr>`).join("")}
+$("xSearch").addEventListener("input",renderExplore);$("xClear").onclick=()=>{$("xSearch").value="";renderExplore()};
+$("vCards").onclick=()=>{view="cards";$("vCards").setAttribute("aria-pressed",true);$("vTable").setAttribute("aria-pressed",false);renderExplore()};
+$("vTable").onclick=()=>{view="table";$("vTable").setAttribute("aria-pressed",true);$("vCards").setAttribute("aria-pressed",false);renderExplore()};
+setInterval(()=>{if(!document.querySelector('[data-view="explore"]').hidden&&view==="cards"&&!$("xSearch").matches(":focus"))renderExplore()},1000);
+
+/* ---------- coin / trade ---------- */
+if(CONFIG.CA){$("coinCa").textContent=short(CONFIG.CA);$("caTxt").textContent=CONFIG.CA}explorerLinks();
+$("caCopy").onclick=()=>CONFIG.CA?copy(CONFIG.CA,"CA"):toast("The CA is posted on X at launch.");
+let side="buy";
+$("sBuy").onclick=()=>{side="buy";$("sBuy").setAttribute("aria-pressed",true);$("sSell").setAttribute("aria-pressed",false);trade()};
+$("sSell").onclick=()=>{side="sell";$("sSell").setAttribute("aria-pressed",true);$("sBuy").setAttribute("aria-pressed",false);trade()};
+$$(".quick button").forEach(b=>b.onclick=()=>{if(b.dataset.q==="max"){const s=parseFloat($("pSol").textContent);$("tAmt").value=isFinite(s)?Math.max(0,s-.01).toFixed(3):"";if(!isFinite(s))toast("Connect a wallet to use Max.")}else $("tAmt").value=b.dataset.q;trade()});
+function trade(){const sol=+$("tAmt").value||0,px=+$("tPx").value||0;
+  if(side==="sell"){$("tTix").textContent="0";}else $("tTix").textContent=px?tickets(sol*px).toLocaleString():"—";
+  const g=$("tGo");if(CONFIG.LIVE&&CONFIG.CA){g.disabled=false;g.textContent=(side==="buy"?"Buy":"Sell")+" $CAPSOL on Jupiter ↗"}else{g.disabled=true;g.textContent="Trading opens at Genesis"}}
+$("tAmt").addEventListener("input",trade);$("tPx").addEventListener("input",trade);
+$("tGo").onclick=()=>{const u=side==="buy"?`https://jup.ag/swap/SOL-${CONFIG.CA}`:`https://jup.ag/swap/${CONFIG.CA}-SOL`;const l=document.createElement("a");l.href=u;l.target="_blank";l.rel="noopener";document.body.appendChild(l);l.click();l.remove()};
+fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd").then(r=>r.json()).then(j=>{if(j.solana&&!$("tPx").value){$("tPx").value=j.solana.usd;trade()}}).catch(()=>{$("tPx").placeholder="type the SOL price"});
+(function noise(){const c=$("noise"),x=c.getContext("2d");c.width=160;c.height=90;const im=x.createImageData(160,90);const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function f(){if(!document.querySelector('[data-view="coin"]').hidden){for(let i=0;i<im.data.length;i+=4){const v=Math.random()*255|0;im.data[i]=v*.6;im.data[i+1]=v*.35;im.data[i+2]=v;im.data[i+3]=255}x.putImageData(im,0,0)}if(!reduce)setTimeout(()=>requestAnimationFrame(f),70)}f()})();
+
+/* ---------- launch ---------- */
+const L={img:"",win:4,cur:"SOL"};
+$("lImg").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;if(f.size>4e6){toast("Pick an image under 4 MB.");return}const r=new FileReader();r.onload=()=>{L.img=r.result;$("lImgBox").innerHTML=`<img src="${r.result}" alt="Coin image">`;prev()};r.readAsDataURL(f)});
+function optGroup(id,key){$$("#"+id+" button").forEach(b=>b.onclick=()=>{$$("#"+id+" button").forEach(x=>x.setAttribute("aria-pressed",x===b));L[key]=key==="win"?+b.dataset.v:b.dataset.v;prev()})}
+optGroup("lWin","win");optGroup("lCur","cur");
+["lName","lTick","lSplit","lVol","lDesc"].forEach(id=>$(id).addEventListener("input",prev));
+$("lTick").addEventListener("input",()=>{const v=$("lTick").value.toUpperCase().replace(/[^A-Z0-9]/g,"");if(v!==$("lTick").value)$("lTick").value=v});
+function prev(){const pot=+$("lSplit").value,cr=Math.max(0,2-pot);
+  $("lPotV").textContent=$("lPotB").textContent=pot.toFixed(2)+"%";$("lCrV").textContent=$("lCrB").textContent=cr.toFixed(2)+"%";
+  $("lPotBar").style.width=pot/2*100+"%";$("lCrBar").style.width=cr/2*100+"%";
+  const vol=+$("lVol").value||0,perWin=vol*pot/100*(L.win/24),crDay=vol*cr/100;
+  const m=v=>"$"+(v>=1e6?(v/1e6).toFixed(2)+"M":v>=1e4?(v/1e3).toFixed(1)+"K":Math.round(v).toLocaleString());
+  $("lPotEst").textContent=m(perWin);$("lCrEst").textContent=m(crDay);
+  const c={name:$("lName").value||"Your coin",tick:$("lTick").value||"TICKER",win:L.win,img:L.img};
+  $("lPrev").innerHTML=cardHTML(c).replace('href="#launch"','href="#launch" tabindex="-1" aria-hidden="true"').replace("draft · only you","#— · preview")+`<p class="note" style="margin:10px 0 0">Pays winners in ${L.cur==="SOL"?"SOL":"$"+esc(c.tick)} every ${L.win===24?"day":L.win+"h"} · pot ${pot.toFixed(2)}% · creator ${cr.toFixed(2)}%</p>`}
+function draft(){return {name:$("lName").value.trim(),tick:$("lTick").value.trim(),desc:$("lDesc").value.trim(),web:$("lWeb").value.trim(),x:$("lX").value.trim(),tg:$("lTg").value.trim(),pot:+$("lSplit").value,win:L.win,cur:L.cur,img:L.img&&L.img.length<300000?L.img:""}}
+function check(){const d=draft();const e=$("lErr");let m="";if(!d.name)m="Give your coin a name.";else if(d.tick.length<2)m="The ticker needs at least 2 letters or numbers.";e.hidden=!m;e.textContent=m;return m?null:d}
+$("lSave").onclick=()=>{const d=check();if(!d)return;const ds=store.get("drafts",[]).filter(x=>x.tick!==d.tick);ds.unshift(d);store.set("drafts",ds.slice(0,8));toast("Draft saved. It shows in Explore and your profile.")};
+$("lGo").onclick=async()=>{const d=check();if(!d)return;if(!wallet){await connect();if(!wallet)return}
+  const ds=store.get("drafts",[]).filter(x=>x.tick!==d.tick);ds.unshift(d);store.set("drafts",ds.slice(0,8));
+  toast("Launches open after $CAPSOL Genesis. Your draft is saved and ready.")};
+prev();
+
+/* ---------- proof replayer ---------- */
+const EX_LIST="ExampLeWa11et1111111111111111111111111111,14\nExampLeWa11et2222222222222222222222222222,9\nExampLeWa11et3333333333333333333333333333,31\nExampLeWa11et4444444444444444444444444444,3\nExampLeWa11et5555555555555555555555555555,22";
+const EX_SEED="9f2c4b7e1a0d3c6f8e5b2a9d7c4f1e0b3a6d9c2f5e8b1a4d7c0f3e6b9a2d5c8f";
+function loadEx(){$("rList").value=EX_LIST;$("rSeed").value=EX_SEED}
+$("rEx").onclick=()=>{loadEx();replay()};
+async function replay(){const out=$("rOut");const lines=$("rList").value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);const seed=$("rSeed").value.trim().toLowerCase();
+  const rows=[];for(const l of lines){const [w,t]=l.split(/[,\s]+/);const n=parseInt(t,10);if(!w||!(n>=0)){out.innerHTML=`<div><span>Status</span><code style="color:var(--red)">Can't read "${esc(l)}". Use wallet,tickets on each line.</code></div>`;return}rows.push([w,n])}
+  if(!rows.length){out.innerHTML='<div><span>Status</span><code style="color:var(--amber)">Paste at least one wallet,tickets line.</code></div>';return}
+  if(!/^[0-9a-f]+$/.test(seed)){out.innerHTML='<div><span>Status</span><code style="color:var(--red)">The seed must be hex (0-9, a-f).</code></div>';return}
+  const total=rows.reduce((a,r)=>a+r[1],0);if(!total){out.innerHTML='<div><span>Status</span><code style="color:var(--red)">Total tickets is 0.</code></div>';return}
+  try{const canon=rows.map(r=>r[0]+","+r[1]).join("\n");const lh=await sha(canon);const dh=await sha(seed+":"+lh);const idx=Number(BigInt("0x"+dh)%BigInt(total));
+    let acc=0,win=null,range="";for(const [w,n] of rows){if(idx<acc+n){win=w;range=acc+"–"+(acc+n-1);break}acc+=n}
+    out.innerHTML=`<div><span>List hash</span><code>${lh}</code></div><div><span>Draw hash</span><code>${dh}</code></div><div><span>Total tickets</span><code>${total.toLocaleString()}</code></div><div><span>Winning index</span><code>${idx.toLocaleString()}</code></div><div><span>Winner</span><code style="color:#fff;text-shadow:0 0 10px var(--green)">${esc(win)}</code></div><div><span>Ticket range</span><code>${range}</code></div><div><span>Status</span><code>✓ Replayed in your browser. Compare these values with the published proof.</code></div>`;beep(1500,.1)}
+  catch(e){out.innerHTML='<div><span>Status</span><code style="color:var(--red)">This browser can\'t run SHA-256 here.</code></div>'}}
+$("rRun").onclick=replay;loadEx();
+
+/* ---------- boot ---------- */
+odds();renderSched();setInterval(renderSched,60e3);renderNotes();tick();route();
+</script>
+</html>
